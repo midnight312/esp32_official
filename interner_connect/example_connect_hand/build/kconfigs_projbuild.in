@@ -1,0 +1,7 @@
+source "/home/thanh/esp32_official/esp-idf/components/app_update/Kconfig.projbuild"
+source "/home/thanh/esp32_official/esp-idf/components/bootloader/Kconfig.projbuild"
+source "/home/thanh/esp32_official/esp-idf/components/esp_rom/Kconfig.projbuild"
+source "/home/thanh/esp32_official/esp-idf/components/esptool_py/Kconfig.projbuild"
+source "/home/thanh/esp32_official/esp-idf/components/partition_table/Kconfig.projbuild"
+source "/home/thanh/esp32_official/interner_connect/example_connect_hand/main/Kconfig.projbuild"
+source "/home/thanh/esp32_official/esp-idf/examples/common_components/protocol_examples_common/Kconfig.projbuild"
