@@ -9,6 +9,8 @@
 #define SSID            "Tenda_DFB070"
 #define PASSWORD        "12345678"
 
+xSemaphoreHandle onConnectionHandler;
+
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     switch(event->event_id)
@@ -57,7 +59,25 @@ void wifiInit()
   ESP_ERROR_CHECK(esp_wifi_start());
 }
 
+void onConnected(void *params)
+{
+    while(true)
+    {
+        if(xSemaphoreTake(onConnectionHandler, 10*1000 / portTICK_PERIOD_MS));
+        {
+            //do something
+            xSemaphoreTake(onConnectionHandler, portMAX_DELAY));
+        }
+        else
+        {
+            esp_restart();
+        }
+    }
+}
+
 void app_main(void)
 {
+    onConnectionHandler = xSemaphoreCreateBinary();
     wifiInit();
+    xTaskCreate(&onConnected,"On connected", 1024*4, NULL, 5, NULL);
 }
