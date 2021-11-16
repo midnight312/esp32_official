@@ -39,6 +39,8 @@
 #include <openthread/netdata.h>
 
 #include "common/clearable.hpp"
+#include "common/data.hpp"
+#include "common/debug.hpp"
 #include "common/equatable.hpp"
 #include "net/ip6_address.hpp"
 
@@ -56,6 +58,7 @@ namespace NetworkData {
 // Forward declarations
 class NetworkData;
 class Local;
+class Publisher;
 class PrefixTlv;
 class BorderRouterTlv;
 class BorderRouterEntry;
@@ -63,6 +66,76 @@ class HasRouteTlv;
 class HasRouteEntry;
 class ServiceTlv;
 class ServerTlv;
+
+/**
+ * This enumeration type represents the route preference values as a signed integer (per RFC-4191).
+ *
+ */
+enum RoutePreference : int8_t
+{
+    kRoutePreferenceLow    = OT_ROUTE_PREFERENCE_LOW,  ///< Low route preference.
+    kRoutePreferenceMedium = OT_ROUTE_PREFERENCE_MED,  ///< Medium route preference.
+    kRoutePreferenceHigh   = OT_ROUTE_PREFERENCE_HIGH, ///< High route preference.
+};
+
+/**
+ * This function indicates whether a given `int8_t` preference value is a valid route preference (i.e., one of the
+ * values from `RoutePreference` enumeration).
+ *
+ * @param[in] aPref  The signed route preference value.
+ *
+ * @retval TRUE   if @p aPref is valid.
+ * @retval FALSE  if @p aPref is not valid
+ *
+ */
+inline bool IsRoutePreferenceValid(int8_t aPref)
+{
+    return (aPref == kRoutePreferenceLow) || (aPref == kRoutePreferenceMedium) || (aPref == kRoutePreferenceHigh);
+}
+
+/**
+ * This function coverts a route preference to a 2-bit unsigned value.
+ *
+ * The @p aPref MUST be valid (value from `RoutePreference` enumeration), or the behavior is undefined.
+ *
+ * @param[in] aPref   The route preference to convert.
+ *
+ * @returns The 2-bit unsigned value representing @p aPref.
+ *
+ */
+inline uint8_t RoutePreferenceToValue(int8_t aPref)
+{
+    constexpr uint8_t kHigh   = 1; // 01
+    constexpr uint8_t kMedium = 0; // 00
+    constexpr uint8_t kLow    = 3; // 11
+
+    OT_ASSERT(IsRoutePreferenceValid(aPref));
+
+    return (aPref == 0) ? kMedium : ((aPref > 0) ? kHigh : kLow);
+}
+
+/**
+ * This function coverts a 2-bit unsigned value to a route preference.
+ *
+ * @param[in] aValue   The 2-bit unsigned value to convert from. Note that only the first two bits of @p aValue
+ *                     are used and the rest of bits are ignored.
+ *
+ * @returns The route preference corresponding to @p aValue.
+ *
+ */
+inline RoutePreference RoutePreferenceFromValue(uint8_t aValue)
+{
+    constexpr uint8_t kMask = 3; // First two bits.
+
+    static const RoutePreference kRoutePreferences[] = {
+        /* 0 (00)  -> */ kRoutePreferenceMedium,
+        /* 1 (01)  -> */ kRoutePreferenceHigh,
+        /* 2 (10)  -> */ kRoutePreferenceMedium, // Per RFC-4191, the reserved value (10) MUST be treated as (00)
+        /* 3 (11)  -> */ kRoutePreferenceLow,
+    };
+
+    return kRoutePreferences[aValue & kMask];
+}
 
 /**
  * This class represents an On-mesh Prefix (Border Router) configuration.
@@ -74,6 +147,7 @@ class OnMeshPrefixConfig : public otBorderRouterConfig,
 {
     friend class NetworkData;
     friend class Local;
+    friend class Publisher;
 
 public:
     /**
@@ -125,6 +199,7 @@ class ExternalRouteConfig : public otExternalRouteConfig,
 {
     friend class NetworkData;
     friend class Local;
+    friend class Publisher;
 
 public:
     /**
@@ -176,6 +251,22 @@ private:
 };
 
 /**
+ * This class represents a Service Data.
+ *
+ */
+class ServiceData : public Data<kWithUint8Length>
+{
+};
+
+/**
+ * This class represents a Server Data.
+ *
+ */
+class ServerData : public Data<kWithUint8Length>
+{
+};
+
+/**
  * This type represents a Service configuration.
  *
  */
@@ -194,6 +285,14 @@ public:
 
     public:
         /**
+         * This method gets the Server Data.
+         *
+         * @param[out] aServerData   A reference to a`ServerData` to return the data.
+         *
+         */
+        void GetServerData(ServerData &aServerData) const { aServerData.Init(mServerData, mServerDataLength); }
+
+        /**
          * This method overloads operator `==` to evaluate whether or not two `ServerConfig` instances are equal.
          *
          * @param[in]  aOther  The other `ServerConfig` instance to compare with.
@@ -207,6 +306,14 @@ public:
     private:
         void SetFrom(const ServerTlv &aServerTlv);
     };
+
+    /**
+     * This method gets the Service Data.
+     *
+     * @param[out] aServiceData   A reference to a `ServiceData` to return the data.
+     *
+     */
+    void GetServiceData(ServiceData &aServiceData) const { aServiceData.Init(mServiceData, mServiceDataLength); }
 
     /**
      * This method gets the Server configuration.

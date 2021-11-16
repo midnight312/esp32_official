@@ -89,6 +89,7 @@ typedef struct {
     bool skip_cert_common_name_check;
     bool use_secure_element;
     void *ds_data;
+    int message_retransmit_timeout;
 } mqtt_config_storage_t;
 
 typedef enum {
@@ -206,18 +207,23 @@ static esp_err_t esp_mqtt_set_ssl_transport_properties(esp_transport_list_handle
         esp_transport_ssl_enable_global_ca_store(ssl);
     } else if (cfg->crt_bundle_attach != NULL) {
 #ifdef MQTT_SUPPORTED_FEATURE_CERTIFICATE_BUNDLE
-            esp_transport_ssl_crt_bundle_attach(ssl, cfg->crt_bundle_attach);
-#else   
-            ESP_LOGE(TAG, "Certificate bundle feature is not available in IDF version %s", IDF_VER);
-            goto esp_mqtt_set_transport_failed;
-#endif
+#ifdef CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+        esp_transport_ssl_crt_bundle_attach(ssl, cfg->crt_bundle_attach);
+#else
+        ESP_LOGE(TAG, "Certificate bundle is not enabled for mbedTLS in menuconfig");
+        goto esp_mqtt_set_transport_failed;
+#endif /* CONFIG_MBEDTLS_CERTIFICATE_BUNDLE */
+#else
+        ESP_LOGE(TAG, "Certificate bundle feature is not available in IDF version %s", IDF_VER);
+        goto esp_mqtt_set_transport_failed;
+#endif /* MQTT_SUPPORTED_FEATURE_CERTIFICATE_BUNDLE */
     } else {
         ESP_OK_CHECK(TAG, esp_mqtt_set_cert_key_data(ssl, MQTT_SSL_DATA_API_CA_CERT, cfg->cacert_buf, cfg->cacert_bytes),
                      goto esp_mqtt_set_transport_failed);
-        
+
     }
 
-    
+
 
     if (cfg->use_secure_element) {
 #ifdef MQTT_SUPPORTED_FEATURE_SECURE_ELEMENT
@@ -362,6 +368,11 @@ esp_err_t esp_mqtt_set_config(esp_mqtt_client_handle_t client, const esp_mqtt_cl
             MQTT_API_UNLOCK(client);
             return ESP_ERR_NO_MEM;
         });
+    }
+
+    client->config->message_retransmit_timeout = config->message_retransmit_timeout;
+    if (config->message_retransmit_timeout <= 0) {
+       client->config->message_retransmit_timeout = 1000;
     }
 
     client->config->task_prio = config->task_prio;
@@ -514,19 +525,28 @@ esp_err_t esp_mqtt_set_config(esp_mqtt_client_handle_t client, const esp_mqtt_cl
 
     if (config->transport) {
         free(client->config->scheme);
-        if (config->transport == MQTT_TRANSPORT_OVER_WS) {
-            client->config->scheme = create_string("ws", 2);
-            ESP_MEM_CHECK(TAG, client->config->scheme, goto _mqtt_set_config_failed);
-        } else if (config->transport == MQTT_TRANSPORT_OVER_TCP) {
+        if (config->transport == MQTT_TRANSPORT_OVER_TCP) {
             client->config->scheme = create_string("mqtt", 4);
             ESP_MEM_CHECK(TAG, client->config->scheme, goto _mqtt_set_config_failed);
-        } else if (config->transport == MQTT_TRANSPORT_OVER_SSL) {
+        }
+#if MQTT_ENABLE_WS
+        else if (config->transport == MQTT_TRANSPORT_OVER_WS) {
+            client->config->scheme = create_string("ws", 2);
+            ESP_MEM_CHECK(TAG, client->config->scheme, goto _mqtt_set_config_failed);
+        }
+#endif
+#if MQTT_ENABLE_SSL
+        else if (config->transport == MQTT_TRANSPORT_OVER_SSL) {
             client->config->scheme = create_string("mqtts", 5);
             ESP_MEM_CHECK(TAG, client->config->scheme, goto _mqtt_set_config_failed);
-        } else if (config->transport == MQTT_TRANSPORT_OVER_WSS) {
+        }
+#endif
+#if MQTT_ENABLE_WSS
+        else if (config->transport == MQTT_TRANSPORT_OVER_WSS) {
             client->config->scheme = create_string("wss", 3);
             ESP_MEM_CHECK(TAG, client->config->scheme, goto _mqtt_set_config_failed);
         }
+#endif
     }
 
     // Set uri at the end of config to override separately configured uri elements
@@ -536,11 +556,11 @@ esp_err_t esp_mqtt_set_config(esp_mqtt_client_handle_t client, const esp_mqtt_cl
             goto _mqtt_set_config_failed;
         }
     }
-    esp_mqtt_check_cfg_conflict(client->config, config);
+    esp_err_t config_has_conflict = esp_mqtt_check_cfg_conflict(client->config, config);
 
     MQTT_API_UNLOCK(client);
 
-    return ESP_OK;
+    return config_has_conflict;
 _mqtt_set_config_failed:
     esp_mqtt_destroy_config(client);
     MQTT_API_UNLOCK(client);
@@ -863,14 +883,18 @@ esp_err_t esp_mqtt_client_set_uri(esp_mqtt_client_handle_t client, const char *u
     }
 
     if (client->config->path) {
-        esp_transport_handle_t trans = esp_transport_list_get_transport(client->transport_list, "ws");
-        if (trans) {
-            esp_transport_ws_set_path(trans, client->config->path);
+#if MQTT_ENABLE_WS
+        esp_transport_handle_t ws_trans = esp_transport_list_get_transport(client->transport_list, "ws");
+        if (ws_trans) {
+            esp_transport_ws_set_path(ws_trans, client->config->path);
         }
-        trans = esp_transport_list_get_transport(client->transport_list, "wss");
-        if (trans) {
-            esp_transport_ws_set_path(trans, client->config->path);
+#endif
+#if MQTT_ENABLE_WSS
+        esp_transport_handle_t wss_trans = esp_transport_list_get_transport(client->transport_list, "wss");
+        if (wss_trans) {
+            esp_transport_ws_set_path(wss_trans, client->config->path);
         }
+#endif
     }
 
     if (puri.field_data[UF_PORT].len) {
@@ -1004,7 +1028,7 @@ static bool is_valid_mqtt_msg(esp_mqtt_client_handle_t client, int msg_type, int
     return false;
 }
 
-static void mqtt_enqueue_oversized(esp_mqtt_client_handle_t client, uint8_t *remaining_data, int remaining_len)
+static outbox_item_handle_t mqtt_enqueue_oversized(esp_mqtt_client_handle_t client, uint8_t *remaining_data, int remaining_len)
 {
     ESP_LOGD(TAG, "mqtt_enqueue_oversized id: %d, type=%d successful",
              client->mqtt_state.pending_msg_id, client->mqtt_state.pending_msg_type);
@@ -1018,16 +1042,14 @@ static void mqtt_enqueue_oversized(esp_mqtt_client_handle_t client, uint8_t *rem
     msg.remaining_data = remaining_data;
     msg.remaining_len = remaining_len;
     //Copy to queue buffer
-    outbox_enqueue(client->outbox, &msg, platform_tick_get_ms());
-
+    return outbox_enqueue(client->outbox, &msg, platform_tick_get_ms());
     //unlock
 }
 
-static void mqtt_enqueue(esp_mqtt_client_handle_t client)
+static outbox_item_handle_t mqtt_enqueue(esp_mqtt_client_handle_t client)
 {
     ESP_LOGD(TAG, "mqtt_enqueue id: %d, type=%d successful",
              client->mqtt_state.pending_msg_id, client->mqtt_state.pending_msg_type);
-    //lock mutex
     if (client->mqtt_state.pending_msg_count > 0) {
         outbox_message_t msg = { 0 };
         msg.data = client->mqtt_state.outbound_message->data;
@@ -1036,9 +1058,9 @@ static void mqtt_enqueue(esp_mqtt_client_handle_t client)
         msg.msg_type = client->mqtt_state.pending_msg_type;
         msg.msg_qos = client->mqtt_state.pending_publish_qos;
         //Copy to queue buffer
-        outbox_enqueue(client->outbox, &msg, platform_tick_get_ms());
+        return outbox_enqueue(client->outbox, &msg, platform_tick_get_ms());
     }
-    //unlock
+    return NULL;
 }
 
 
@@ -1422,10 +1444,10 @@ static void esp_mqtt_task(void *pv)
                     outbox_set_pending(client->outbox, client->mqtt_state.pending_msg_id, TRANSMITTED);
                 }
                 // resend other "transmitted" messages after 1s
-            } else if (platform_tick_get_ms() - last_retransmit > 1000) {
+            } else if (platform_tick_get_ms() - last_retransmit > client->config->message_retransmit_timeout) {
                 last_retransmit = platform_tick_get_ms();
                 item = outbox_dequeue(client->outbox, TRANSMITTED, &msg_tick);
-                if (item && (last_retransmit - msg_tick > 1000))  {
+                if (item && (last_retransmit - msg_tick > client->config->message_retransmit_timeout))  {
                     mqtt_resend_queued(client, item);
                 }
             }
@@ -1456,7 +1478,6 @@ static void esp_mqtt_task(void *pv)
                 client->state = MQTT_STATE_INIT;
             }
 
-            outbox_cleanup(client->outbox, OUTBOX_MAX_SIZE);
             break;
         case MQTT_STATE_WAIT_RECONNECT:
 
@@ -1635,8 +1656,12 @@ int esp_mqtt_client_subscribe(esp_mqtt_client_handle_t client, const char *topic
 
     client->mqtt_state.pending_msg_type = mqtt_get_type(client->mqtt_state.outbound_message->data);
     client->mqtt_state.pending_msg_count ++;
-    mqtt_enqueue(client); //move pending msg to outbox (if have)
-    outbox_set_pending(client->outbox, client->mqtt_state.pending_msg_id, TRANSMITTED);
+    //move pending msg to outbox (if have)
+    if (!mqtt_enqueue(client)) {
+        MQTT_API_UNLOCK(client);
+        return -1;
+    }
+    outbox_set_pending(client->outbox, client->mqtt_state.pending_msg_id, TRANSMITTED);// handle error
 
     if (mqtt_write_data(client) != ESP_OK) {
         ESP_LOGE(TAG, "Error to subscribe topic=%s, qos=%d", topic, qos);
@@ -1673,8 +1698,11 @@ int esp_mqtt_client_unsubscribe(esp_mqtt_client_handle_t client, const char *top
 
     client->mqtt_state.pending_msg_type = mqtt_get_type(client->mqtt_state.outbound_message->data);
     client->mqtt_state.pending_msg_count ++;
-    mqtt_enqueue(client);
-    outbox_set_pending(client->outbox, client->mqtt_state.pending_msg_id, TRANSMITTED);
+    if (!mqtt_enqueue(client)) {
+        MQTT_API_UNLOCK(client);
+        return -1;
+    }
+    outbox_set_pending(client->outbox, client->mqtt_state.pending_msg_id, TRANSMITTED); //handle error
 
     if (mqtt_write_data(client) != ESP_OK) {
         ESP_LOGE(TAG, "Error to unsubscribe topic=%s", topic);
@@ -1719,10 +1747,14 @@ static inline int mqtt_client_enqueue_priv(esp_mqtt_client_handle_t client, cons
         client->mqtt_state.pending_msg_count ++;
         // by default store as QUEUED (not transmitted yet) only for messages which would fit outbound buffer
         if (client->mqtt_state.mqtt_connection.message.fragmented_msg_total_length == 0) {
-            mqtt_enqueue(client);
+            if (!mqtt_enqueue(client)) {
+                return -1;
+            }
         } else {
             int first_fragment = client->mqtt_state.outbound_message->length - client->mqtt_state.outbound_message->fragmented_msg_data_offset;
-            mqtt_enqueue_oversized(client, ((uint8_t *)data) + first_fragment, len - first_fragment);
+            if (!mqtt_enqueue_oversized(client, ((uint8_t *)data) + first_fragment, len - first_fragment)) {
+                return -1;
+            }
             client->mqtt_state.outbound_message->fragmented_msg_total_length = 0;
         }
     }

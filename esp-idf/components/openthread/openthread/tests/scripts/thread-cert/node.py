@@ -38,7 +38,8 @@ import sys
 import time
 import traceback
 import unittest
-from typing import Union, Dict, Optional, List
+from ipaddress import IPv6Address, IPv6Network
+from typing import Union, Dict, Optional, List, Any
 
 import pexpect
 import pexpect.popen_spawn
@@ -58,6 +59,7 @@ class OtbrDocker:
     _docker_proc = None
 
     def __init__(self, nodeid: int, **kwargs):
+        self.verbose = int(float(os.getenv('VERBOSE', 0)))
         try:
             self._docker_name = config.OTBR_DOCKER_NAME_PREFIX + str(nodeid)
             self._prepare_ot_rcp_sim(nodeid)
@@ -136,6 +138,8 @@ class OtbrDocker:
 
         cmd = f'docker exec -i {self._docker_name} ot-ctl'
         self.pexpect = pexpect.popen_spawn.PopenSpawn(cmd, timeout=30)
+        if self.verbose:
+            self.pexpect.logfile_read = sys.stdout.buffer
 
         # Add delay to ensure that the process is ready to receive commands.
         timeout = 0.4
@@ -715,6 +719,10 @@ class NodeImpl:
         self.thread_stop()
         self.interface_down()
 
+    def set_log_level(self, level: int):
+        self.send_command(f'log level {level}')
+        self._expect_done()
+
     def interface_up(self):
         self.send_command('ifconfig up')
         self._expect_done()
@@ -792,6 +800,28 @@ class NodeImpl:
     def set_bbr_registration_jitter(self, jitter):
         cmd = 'bbr jitter %d' % jitter
         self.send_command(cmd)
+        self._expect_done()
+
+    def srp_server_get_state(self):
+        states = ['disabled', 'running', 'stopped']
+        self.send_command('srp server state')
+        return self._expect_result(states)
+
+    def srp_server_get_addr_mode(self):
+        modes = [r'unicast', r'anycast']
+        self.send_command(f'srp server addrmode')
+        return self._expect_result(modes)
+
+    def srp_server_set_addr_mode(self, mode):
+        self.send_command(f'srp server addrmode {mode}')
+        self._expect_done()
+
+    def srp_server_get_anycast_seq_num(self):
+        self.send_command(f'srp server seqnum')
+        return int(self._expect_result(r'\d+'))
+
+    def srp_server_set_anycast_seq_num(self, seqnum):
+        self.send_command(f'srp server seqnum {seqnum}')
         self._expect_done()
 
     def srp_server_set_enabled(self, enable):
@@ -983,8 +1013,8 @@ class NodeImpl:
         self.send_command(f'srp client host name')
         self._expect_done()
 
-    def srp_client_remove_host(self, remove_key=False):
-        self.send_command(f'srp client host remove {"1" if remove_key else "0"}')
+    def srp_client_remove_host(self, remove_key=False, send_unreg_to_server=False):
+        self.send_command(f'srp client host remove {int(remove_key)} {int(send_unreg_to_server)}')
         self._expect_done()
 
     def srp_client_clear_host(self):
@@ -1051,6 +1081,22 @@ class NodeImpl:
         keys = [key_value[0] for key_value in key_values]
         values = [key_value[1].strip('"') for key_value in key_values]
         return dict(zip(keys, values))
+
+    def locate(self, anycast_addr):
+        cmd = 'locate ' + anycast_addr
+        self.send_command(cmd)
+        self.simulator.go(5)
+        return self._parse_locate_result(self._expect_command_output(cmd)[0])
+
+    def _parse_locate_result(self, line: str):
+        """Parse anycast locate result as list of ml-eid and rloc16.
+
+           Example output for input
+           'fd00:db8:0:0:acf9:9d0:7f3c:b06e 0xa800'
+
+           [ 'fd00:db8:0:0:acf9:9d0:7f3c:b06e', '0xa800' ]
+        """
+        return line.split(' ')
 
     def enable_backbone_router(self):
         cmd = 'bbr enable'
@@ -1149,7 +1195,7 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_done()
 
-    def multicast_listener_list(self) -> Dict[ipaddress.IPv6Address, int]:
+    def multicast_listener_list(self) -> Dict[IPv6Address, int]:
         cmd = 'bbr mgmt mlr listener'
         self.send_command(cmd)
 
@@ -1157,7 +1203,7 @@ class NodeImpl:
         for line in self._expect_results("\S+ \d+"):
             line = line.split()
             assert len(line) == 2, line
-            ip = ipaddress.IPv6Address(line[0])
+            ip = IPv6Address(line[0])
             timeout = int(line[1])
             assert ip not in table
 
@@ -1170,9 +1216,9 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_done()
 
-    def multicast_listener_add(self, ip: Union[ipaddress.IPv6Address, str], timeout: int = 0):
-        if not isinstance(ip, ipaddress.IPv6Address):
-            ip = ipaddress.IPv6Address(ip)
+    def multicast_listener_add(self, ip: Union[IPv6Address, str], timeout: int = 0):
+        if not isinstance(ip, IPv6Address):
+            ip = IPv6Address(ip)
 
         cmd = f'bbr mgmt mlr listener add {ip.compressed} {timeout}'
         self.send_command(cmd)
@@ -1183,7 +1229,7 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_done()
 
-    def register_multicast_listener(self, *ipaddrs: Union[ipaddress.IPv6Address, str], timeout=None):
+    def register_multicast_listener(self, *ipaddrs: Union[IPv6Address, str], timeout=None):
         assert len(ipaddrs) > 0, ipaddrs
 
         ipaddrs = map(str, ipaddrs)
@@ -1198,7 +1244,7 @@ class NodeImpl:
         status = int(m.group(1))
         failed_num = int(m.group(2))
         assert failed_num == len(lines) - 1
-        failed_ips = list(map(ipaddress.IPv6Address, lines[1:]))
+        failed_ips = list(map(IPv6Address, lines[1:]))
         print(f"register_multicast_listener {ipaddrs} => status: {status}, failed ips: {failed_ips}")
         return status, failed_ips
 
@@ -1324,6 +1370,10 @@ class NodeImpl:
         cmd = 'parentpriority %d' % priority
         self.send_command(cmd)
         self._expect_done()
+
+    def get_partition_id(self):
+        self.send_command('partitionid')
+        return self._expect_result(r'\d+')
 
     def get_preferred_partition_id(self):
         self.send_command('partitionid preferred')
@@ -1516,7 +1566,7 @@ class NodeImpl:
         return None
 
     def get_mleid_iid(self):
-        ml_eid = ipaddress.IPv6Address(self.get_mleid())
+        ml_eid = IPv6Address(self.get_mleid())
         return ml_eid.packed[8:].hex()
 
     def get_eidcaches(self):
@@ -1544,6 +1594,63 @@ class NodeImpl:
         cmd = 'service remove %s %s' % (enterpriseNumber, serviceData)
         self.send_command(cmd)
         self._expect_done()
+
+    def get_child_table(self) -> Dict[int, Dict[str, Any]]:
+        """Get the table of attached children."""
+        cmd = 'child table'
+        self.send_command(cmd)
+        output = self._expect_command_output(cmd)
+
+        #
+        # Example output:
+        # | ID  | RLOC16 | Timeout    | Age        | LQ In | C_VN |R|D|N|Ver|CSL|QMsgCnt| Extended MAC     |
+        # +-----+--------+------------+------------+-------+------+-+-+-+---+---+-------+------------------+
+        # |   1 | 0xc801 |        240 |         24 |     3 |  131 |1|0|0|  3| 0 |     0 | 4ecede68435358ac |
+        # |   2 | 0xc802 |        240 |          2 |     3 |  131 |0|0|0|  3| 1 |     0 | a672a601d2ce37d8 |
+        # Done
+        #
+
+        headers = self.__split_table_row(output[0])
+
+        table = {}
+        for line in output[2:]:
+            line = line.strip()
+            if not line:
+                continue
+
+            fields = self.__split_table_row(line)
+            col = lambda colname: self.__get_table_col(colname, headers, fields)
+
+            id = int(col("ID"))
+            r, d, n = int(col("R")), int(col("D")), int(col("N"))
+            mode = f'{"r" if r else ""}{"d" if d else ""}{"n" if n else ""}'
+
+            table[int(id)] = {
+                'id': int(id),
+                'rloc16': int(col('RLOC16'), 16),
+                'timeout': int(col('Timeout')),
+                'age': int(col('Age')),
+                'lq_in': int(col('LQ In')),
+                'c_vn': int(col('C_VN')),
+                'mode': mode,
+                'extaddr': col('Extended MAC'),
+                'ver': int(col('Ver')),
+                'csl': bool(int(col('CSL'))),
+                'qmsgcnt': int(col('QMsgCnt')),
+            }
+
+        return table
+
+    def __split_table_row(self, row: str) -> List[str]:
+        if not (row.startswith('|') and row.endswith('|')):
+            raise ValueError(row)
+
+        fields = row.split('|')
+        fields = [x.strip() for x in fields[1:-1]]
+        return fields
+
+    def __get_table_col(self, colname: str, headers: List[str], fields: List[str]) -> str:
+        return fields[headers.index(colname)]
 
     def __getOmrAddress(self):
         prefixes = [prefix.split('::')[0] for prefix in self.get_prefixes()]
@@ -1606,6 +1713,22 @@ class NodeImpl:
 
         return None
 
+    def get_ip6_address_by_prefix(self, prefix: Union[str, IPv6Network]) -> List[IPv6Address]:
+        """Get addresses matched with given prefix.
+
+        Args:
+            prefix: the prefix to match against.
+                    Can be either a string or ipaddress.IPv6Network.
+
+        Returns:
+            The IPv6 address list.
+        """
+        if isinstance(prefix, str):
+            prefix = IPv6Network(prefix)
+        addrs = map(IPv6Address, self.get_addrs())
+
+        return [addr for addr in addrs if addr in prefix]
+
     def get_ip6_address(self, address_type):
         """Get specific type of IPv6 address configured on thread device.
 
@@ -1661,6 +1784,16 @@ class NodeImpl:
         self.send_command('br disable')
         self._expect_done()
 
+    def get_omr_prefix(self):
+        cmd = 'br omrprefix'
+        self.send_command(cmd)
+        return self._expect_command_output(cmd)[0]
+
+    def get_on_link_prefix(self):
+        cmd = 'br onlinkprefix'
+        self.send_command(cmd)
+        return self._expect_command_output(cmd)[0]
+
     def get_prefixes(self):
         return self.get_netdata()['Prefixes']
 
@@ -1713,6 +1846,34 @@ class NodeImpl:
 
     def register_netdata(self):
         self.send_command('netdata register')
+        self._expect_done()
+
+    def netdata_publish_dnssrp_anycast(self, seqnum):
+        self.send_command(f'netdata publish dnssrp anycast {seqnum}')
+        self._expect_done()
+
+    def netdata_publish_dnssrp_unicast(self, address, port):
+        self.send_command(f'netdata publish dnssrp unicast {address} {port}')
+        self._expect_done()
+
+    def netdata_publish_dnssrp_unicast_mleid(self, port):
+        self.send_command(f'netdata publish dnssrp unicast {port}')
+        self._expect_done()
+
+    def netdata_unpublish_dnssrp(self):
+        self.send_command('netdata unpublish dnssrp')
+        self._expect_done()
+
+    def netdata_publish_prefix(self, prefix, flags='paosr', prf='med'):
+        self.send_command(f'netdata publish prefix {prefix} {flags} {prf}')
+        self._expect_done()
+
+    def netdata_publish_route(self, prefix, flags='s', prf='med'):
+        self.send_command(f'netdata publish route {prefix} {flags} {prf}')
+        self._expect_done()
+
+    def netdata_unpublish_prefix(self, prefix):
+        self.send_command(f'netdata unpublish {prefix}')
         self._expect_done()
 
     def send_network_diag_get(self, addr, tlv_types):
@@ -1811,6 +1972,9 @@ class NodeImpl:
     def reset(self):
         self.send_command('reset')
         time.sleep(self.RESET_DELAY)
+
+        if self.is_otbr:
+            self.set_log_level(5)
 
     def set_router_selection_jitter(self, jitter):
         cmd = 'routerselectionjitter %d' % jitter
@@ -2660,6 +2824,112 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_command_output(cmd)
 
+    def history_netinfo(self, num_entries=0):
+        """
+        Get the `netinfo` history list, parse each entry and return
+        a list of dictionary (string key and string value) entries.
+
+        Example of return value:
+        [
+            {
+                'age': '00:00:00.000 ago',
+                'role': 'disabled',
+                'mode': 'rdn',
+                'rloc16': '0x7400',
+                'partition-id': '1318093703'
+            },
+            {
+                'age': '00:00:02.588 ago',
+                'role': 'leader',
+                'mode': 'rdn',
+                'rloc16': '0x7400',
+                'partition-id': '1318093703'
+            }
+        ]
+        """
+        cmd = f'history netinfo list {num_entries}'
+        self.send_command(cmd)
+        output = self._expect_command_output(cmd)
+        netinfos = []
+        for entry in output:
+            netinfo = {}
+            age, info = entry.split(' -> ')
+            netinfo['age'] = age
+            for item in info.split(' '):
+                k, v = item.split(':')
+                netinfo[k] = v
+            netinfos.append(netinfo)
+        return netinfos
+
+    def history_rx(self, num_entries=0):
+        """
+        Get the IPv6 RX history list, parse each entry and return
+        a list of dictionary (string key and string value) entries.
+
+        Example of return value:
+        [
+            {
+                'age': '00:00:01.999',
+                'type': 'ICMP6(EchoReqst)',
+                'len': '16',
+                'sec': 'yes',
+                'prio': 'norm',
+                'rss': '-20',
+                'from': '0xac00',
+                'radio': '15.4',
+                'src': '[fd00:db8:0:0:2cfa:fd61:58a9:f0aa]:0',
+                'dst': '[fd00:db8:0:0:ed7e:2d04:e543:eba5]:0',
+            }
+        ]
+        """
+        cmd = f'history rx list {num_entries}'
+        self.send_command(cmd)
+        return self._parse_history_rx_tx_ouput(self._expect_command_output(cmd))
+
+    def history_tx(self, num_entries=0):
+        """
+        Get the IPv6 TX history list, parse each entry and return
+        a list of dictionary (string key and string value) entries.
+
+        Example of return value:
+        [
+            {
+                'age': '00:00:01.999',
+                'type': 'ICMP6(EchoReply)',
+                'len': '16',
+                'sec': 'yes',
+                'prio': 'norm',
+                'to': '0xac00',
+                'tx-success': 'yes',
+                'radio': '15.4',
+                'src': '[fd00:db8:0:0:ed7e:2d04:e543:eba5]:0',
+                'dst': '[fd00:db8:0:0:2cfa:fd61:58a9:f0aa]:0',
+
+            }
+        ]
+        """
+        cmd = f'history tx list {num_entries}'
+        self.send_command(cmd)
+        return self._parse_history_rx_tx_ouput(self._expect_command_output(cmd))
+
+    def _parse_history_rx_tx_ouput(self, lines):
+        rxtx_list = []
+        for line in lines:
+            if line.strip().startswith('type:'):
+                for item in line.strip().split(' '):
+                    k, v = item.split(':')
+                    entry[k] = v
+            elif line.strip().startswith('src:'):
+                entry['src'] = line[4:]
+            elif line.strip().startswith('dst:'):
+                entry['dst'] = line[4:]
+                rxtx_list.append(entry)
+            else:
+                entry = {}
+                entry['age'] = line
+
+        return rxtx_list
+
 
 class Node(NodeImpl, OtCli):
     pass
@@ -2908,6 +3178,8 @@ interface eth0
         AdvOnLink on;
         AdvAutonomous %s;
         AdvRouterAddr off;
+        AdvPreferredLifetime 40;
+        AdvValidLifetime 60;
     };
 };
 EOF
@@ -2948,6 +3220,7 @@ class OtbrNode(LinuxHost, NodeImpl, OtbrDocker):
 
     def start(self):
         self._setup_sysctl()
+        self.set_log_level(5)
         super().start()
 
 
@@ -2981,7 +3254,7 @@ class HostNode(LinuxHost, OtbrDocker):
 
         addrs = []
         for addr in self.get_ip6_address(config.ADDRESS_TYPE.ONLINK_ULA):
-            if ipaddress.IPv6Address(addr) in ipaddress.IPv6Network(prefix):
+            if IPv6Address(addr) in IPv6Network(prefix):
                 addrs.append(addr)
 
         return addrs

@@ -51,6 +51,7 @@
 #include "common/tasklet.hpp"
 #include "common/time_ticker.hpp"
 #include "common/timer.hpp"
+#include "common/uptime.hpp"
 #include "diags/factory_diags.hpp"
 #include "radio/radio.hpp"
 
@@ -81,6 +82,9 @@
 #endif
 #if OPENTHREAD_CONFIG_CHANNEL_MONITOR_ENABLE
 #include "utils/channel_monitor.hpp"
+#endif
+#if OPENTHREAD_CONFIG_HISTORY_TRACKER_ENABLE
+#include "utils/history_tracker.hpp"
 #endif
 
 #if (OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2)
@@ -190,16 +194,24 @@ public:
      */
     void Reset(void);
 
+#if OPENTHREAD_RADIO
+    /**
+     * This method resets the internal states of the radio.
+     *
+     */
+    void ResetRadioStack(void);
+#endif
+
     /**
      * This method returns the active log level.
      *
      * @returns The log level.
      *
      */
-    otLogLevel GetLogLevel(void) const
+    static otLogLevel GetLogLevel(void)
 #if OPENTHREAD_CONFIG_LOG_LEVEL_DYNAMIC_ENABLE
     {
-        return mLogLevel;
+        return sLogLevel;
     }
 #else
     {
@@ -214,10 +226,10 @@ public:
      * @param[in] aLogLevel  A log level.
      *
      */
-    void SetLogLevel(otLogLevel aLogLevel)
+    static void SetLogLevel(otLogLevel aLogLevel)
     {
         OT_ASSERT(aLogLevel <= OT_LOG_LEVEL_DEBG && aLogLevel >= OT_LOG_LEVEL_NONE);
-        mLogLevel = aLogLevel;
+        sLogLevel = aLogLevel;
     }
 #endif
 
@@ -354,6 +366,9 @@ private:
     // (particularly, SubMac and Mac) to allow them to use its methods
     // from their constructor.
     Radio mRadio;
+#if OPENTHREAD_CONFIG_UPTIME_ENABLE
+    Uptime mUptime;
+#endif
 
 #if OPENTHREAD_MTD || OPENTHREAD_FTD
     // Notifier, TimeTicker, Settings, and MessagePool are initialized
@@ -388,6 +403,10 @@ private:
     Utils::ChannelManager mChannelManager;
 #endif
 
+#if OPENTHREAD_CONFIG_HISTORY_TRACKER_ENABLE
+    Utils::HistoryTracker mHistoryTracker;
+#endif
+
 #if (OPENTHREAD_CONFIG_DATASET_UPDATER_ENABLE || OPENTHREAD_CONFIG_CHANNEL_MANAGER_ENABLE) && OPENTHREAD_FTD
     MeshCoP::DatasetUpdater mDatasetUpdater;
 #endif
@@ -410,7 +429,7 @@ private:
 #endif // OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
 
 #if OPENTHREAD_CONFIG_LOG_LEVEL_DYNAMIC_ENABLE
-    otLogLevel mLogLevel;
+    static otLogLevel sLogLevel;
 #endif
 #if OPENTHREAD_ENABLE_VENDOR_EXTENSION
     Extension::ExtensionBase &mExtension;
@@ -436,6 +455,13 @@ template <> inline Radio::Callbacks &Instance::Get(void)
 {
     return mRadio.mCallbacks;
 }
+
+#if OPENTHREAD_CONFIG_UPTIME_ENABLE
+template <> inline Uptime &Instance::Get(void)
+{
+    return mUptime;
+}
+#endif
 
 #if OPENTHREAD_MTD || OPENTHREAD_FTD
 template <> inline Notifier &Instance::Get(void)
@@ -621,6 +647,13 @@ template <> inline PanIdQueryServer &Instance::Get(void)
     return mThreadNetif.mPanIdQuery;
 }
 
+#if OPENTHREAD_CONFIG_TMF_ANYCAST_LOCATOR_ENABLE
+template <> inline AnycastLocator &Instance::Get(void)
+{
+    return mThreadNetif.mAnycastLocator;
+}
+#endif
+
 #if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE || OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
 template <> inline NetworkData::Local &Instance::Get(void)
 {
@@ -637,6 +670,13 @@ template <> inline NetworkData::Leader &Instance::Get(void)
 template <> inline NetworkData::Notifier &Instance::Get(void)
 {
     return mThreadNetif.mNetworkDataNotifier;
+}
+#endif
+
+#if OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+template <> inline NetworkData::Publisher &Instance::Get(void)
+{
+    return mThreadNetif.mNetworkDataPublisher;
 }
 #endif
 
@@ -818,6 +858,13 @@ template <> inline Utils::ChannelMonitor &Instance::Get(void)
 template <> inline Utils::ChannelManager &Instance::Get(void)
 {
     return mChannelManager;
+}
+#endif
+
+#if OPENTHREAD_CONFIG_HISTORY_TRACKER_ENABLE
+template <> inline Utils::HistoryTracker &Instance::Get(void)
+{
+    return mHistoryTracker;
 }
 #endif
 

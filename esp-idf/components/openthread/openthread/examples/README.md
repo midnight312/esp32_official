@@ -6,6 +6,7 @@ This page lists the available common switches with description. Unless stated ot
 
 | Makefile switch | CMake switch | Description |
 | --- | --- | --- |
+| ANYCAST_LOCATOR | OT_ANYCAST_LOCATOR | Enables anycast locator functionality. |
 | BACKBONE_ROUTER | OT_BACKBONE_ROUTER | Enables Backbone Router functionality for Thread 1.2. |
 | BIG_ENDIAN | OT_BIG_ENDIAN | Allows the host platform to use big-endian byte order. |
 | BORDER_AGENT | OT_BORDER_AGENT | Enables support for border agent. In most cases, enable this switch if you are building On-mesh Commissioner or Border Router with External Commissioning support. |
@@ -37,6 +38,7 @@ This page lists the available common switches with description. Unless stated ot
 | ECDSA | OT_ECDSA | Enables support for Elliptic Curve Digital Signature Algorithm. Enable this switch if ECDSA digital signature is used by application. |
 | EXTERNAL_HEAP | OT_EXTERNAL_HEAP | Enables support for external heap. Enable this switch if the platform uses its own heap. Make sure to specify the external heap Calloc and Free functions to be used by the OpenThread stack. |
 | FULL_LOGS | OT_FULL_LOGS | Enables all log levels and regions. This switch sets the log level to OT_LOG_LEVEL_DEBG and turns on all region flags. See [Logging guide](https://openthread.io/guides/build/logs) to learn more. |
+| HISTORY_TRACKER | OT_HISTORY_TRACKER | Enables support for History Tracker. |
 | IP6_FRAGM | OT_IP6_FRAGM | Enables support for IPv6 fragmentation. |
 | JAM_DETECTION | OT_JAM_DETECTION | Enables support for [Jam Detection](https://openthread.io/guides/build/features/jam-detection). Enable this switch if a device requires the ability to detect signal jamming on a specific channel. |
 | JOINER | OT_JOINER | Enables [support for Joiner](https://openthread.io/reference/group/api-joiner). Enable this switch on a device that has to be commissioned to join the network. |
@@ -48,11 +50,11 @@ This page lists the available common switches with description. Unless stated ot
 | MLR | OT_MLR | Enables Multicast Listener Registration feature for Thread 1.2. |
 | MTD_NETDIAG | OT_MTD_NETDIAG | Enables the TMF network diagnostics on MTDs. |
 | MULTIPLE_INSTANCE | OT_MULTIPLE_INSTANCE | Enables multiple OpenThread instances. |
+| NETDATA_PUBLISHER | OT_NETDATA_PUBLISHER | Enables support for Thread Network Data publisher. |
 | PING_SENDER | OT_PING_SENDER | Enables support for ping sender. |
 | OTNS | OT_OTNS | Enables support for [OpenThread Network Simulator](https://github.com/openthread/ot-ns). Enable this switch if you are building OpenThread for OpenThread Network Simulator. |
 | PLATFORM_UDP | OT_PLATFORM_UDP | Enables platform UDP support. |
 | REFERENCE_DEVICE | OT_REFERENCE_DEVICE | Enables support for Thread Test Harness reference device. Enable this switch on the reference device during certification. |
-| RESET_CONNECTION | OT_SPINEL_RESET_CONNECTION | Enables resetting connection with RCP device. Enable this switch if RCP uses USB transport and performs hard reset. Use symlink instead of file name pointing the RCP device i.e. /dev/serial/by-id/usb-device-name instead of /dev/ttyUSB0 in a connection configuration. |
 | SERVICE | OT_SERVICE | Enables support for injecting Service entries into the Thread Network Data. |
 | SETTINGS_RAM | OT_SETTINGS_RAM | Enables volatile-only storage of settings. |
 | SLAAC | OT_SLAAC | Enables support for adding auto-configured SLAAC addresses by OpenThread. This feature is enabled by default. |
@@ -64,3 +66,4 @@ This page lists the available common switches with description. Unless stated ot
 | TIME_SYNC | OT_TIME_SYNC | Enables the time synchronization service feature. **Note: Enabling this feature breaks conformance to the Thread Specification.** |  |
 | TREL | OT_TREL | Enables TREL radio link for Thread over Infrastructure feature. |
 | UDP_FORWARD | OT_UDP_FORWARD | Enables support for UDP forward. | Enable this switch on the Border Router device (running on the NCP design) with External Commissioning support to service Thread Commissioner packets on the NCP side. |
+| UPTIME | OT_UPTIME | Enables support for tracking OpenThread instance's uptime. |

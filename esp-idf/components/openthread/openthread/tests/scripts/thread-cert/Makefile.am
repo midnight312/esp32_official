@@ -152,6 +152,7 @@ EXTRA_DIST                                                         = \
     sniffer.py                                                       \
     sniffer_transport.py                                             \
     test_anycast.py                                                  \
+    test_anycast_locator.py                                          \
     test_coap.py                                                     \
     test_coap_block.py                                               \
     test_coap_observe.py                                             \
@@ -162,12 +163,15 @@ EXTRA_DIST                                                         = \
     test_diag.py                                                     \
     test_dns_client_config_auto_start.py                             \
     test_dnssd.py                                                    \
+    test_history_tracker.py                                          \
+    test_inform_previous_parent_on_reattach.py                       \
     test_ipv6.py                                                     \
     test_ipv6_fragmentation.py                                       \
     test_ipv6_source_selection.py                                    \
     test_lowpan.py                                                   \
     test_mac802154.py                                                \
     test_mle.py                                                      \
+    test_netdata_publisher.py                                        \
     test_network_data.py                                             \
     test_network_layer.py                                            \
     test_on_mesh_prefix.py                                           \
@@ -180,10 +184,12 @@ EXTRA_DIST                                                         = \
     test_service.py                                                  \
     test_set_mliid.py                                                \
     test_srp_auto_start_mode.py                                      \
+    test_srp_client_remove_host.py                                   \
     test_srp_client_save_server_info.py                              \
     test_srp_lease.py                                                \
     test_srp_name_conflicts.py                                       \
     test_srp_register_single_service.py                              \
+    test_srp_server_anycast_mode.py                                  \
     test_srp_server_reboot_port.py                                   \
     test_srp_sub_type.py                                             \
     test_zero_len_external_route.py                                  \
@@ -217,6 +223,7 @@ check_PROGRAMS                                                     = \
 
 check_SCRIPTS                                                      = \
     test_anycast.py                                                  \
+    test_anycast_locator.py                                          \
     test_coap.py                                                     \
     test_coap_block.py                                               \
     test_coap_observe.py                                             \
@@ -227,12 +234,15 @@ check_SCRIPTS                                                      = \
     test_diag.py                                                     \
     test_dns_client_config_auto_start.py                             \
     test_dnssd.py                                                    \
+    test_history_tracker.py                                          \
+    test_inform_previous_parent_on_reattach.py                       \
     test_ipv6.py                                                     \
     test_ipv6_fragmentation.py                                       \
     test_ipv6_source_selection.py                                    \
     test_lowpan.py                                                   \
     test_mac802154.py                                                \
     test_mle.py                                                      \
+    test_netdata_publisher.py                                        \
     test_network_data.py                                             \
     test_network_layer.py                                            \
     test_on_mesh_prefix.py                                           \
@@ -244,10 +254,12 @@ check_SCRIPTS                                                      = \
     test_router_reattach.py                                          \
     test_service.py                                                  \
     test_srp_auto_start_mode.py                                      \
+    test_srp_client_remove_host.py                                   \
     test_srp_client_save_server_info.py                              \
     test_srp_lease.py                                                \
     test_srp_name_conflicts.py                                       \
     test_srp_register_single_service.py                              \
+    test_srp_server_anycast_mode.py                                  \
     test_srp_server_reboot_port.py                                   \
     test_srp_sub_type.py                                             \
     test_zero_len_external_route.py                                  \

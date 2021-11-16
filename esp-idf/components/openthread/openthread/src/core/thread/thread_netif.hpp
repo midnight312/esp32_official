@@ -88,6 +88,7 @@
 #include "net/srp_client.hpp"
 #include "thread/address_resolver.hpp"
 #include "thread/announce_begin_server.hpp"
+#include "thread/anycast_locator.hpp"
 #include "thread/discover_scanner.hpp"
 #include "thread/energy_scan_server.hpp"
 #include "thread/key_manager.hpp"
@@ -97,6 +98,7 @@
 #include "thread/mle_router.hpp"
 #include "thread/network_data_local.hpp"
 #include "thread/network_data_notifier.hpp"
+#include "thread/network_data_publisher.hpp"
 #include "thread/network_data_service.hpp"
 #include "thread/network_diagnostic.hpp"
 #include "thread/panid_query_server.hpp"
@@ -240,6 +242,9 @@ private:
 #if OPENTHREAD_FTD || OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE || OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
     NetworkData::Notifier mNetworkDataNotifier;
 #endif
+#if OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+    NetworkData::Publisher mNetworkDataPublisher;
+#endif
     NetworkData::Service::Manager mNetworkDataServiceManager;
 #if OPENTHREAD_FTD || OPENTHREAD_CONFIG_TMF_NETWORK_DIAG_MTD_ENABLE
     NetworkDiagnostic::NetworkDiagnostic mNetworkDiagnostic;
@@ -297,6 +302,9 @@ private:
     AnnounceBeginServer mAnnounceBegin;
     PanIdQueryServer    mPanIdQuery;
     EnergyScanServer    mEnergyScan;
+#if OPENTHREAD_CONFIG_TMF_ANYCAST_LOCATOR_ENABLE
+    AnycastLocator mAnycastLocator;
+#endif
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     TimeSync mTimeSync;

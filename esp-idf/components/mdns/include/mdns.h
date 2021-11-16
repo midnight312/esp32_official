@@ -1,16 +1,8 @@
-// Copyright 2015-2016 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * SPDX-FileCopyrightText: 2015-2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 #ifndef ESP_MDNS_H_
 #define ESP_MDNS_H_
 
@@ -187,7 +179,10 @@ esp_err_t mdns_instance_name_set(const char * instance_name);
  * @note The value length of txt items will be automatically decided by strlen
  *
  * @param  instance_name    instance name to set. If NULL,
- *                          global instance name or hostname will be used
+ *                          global instance name or hostname will be used.
+ *                          Note that MDNS_MULTIPLE_INSTANCE config option
+ *                          needs to be enabled for adding multiple instances
+ *                          with the same instance type.
  * @param  service_type     service type (_http, _ftp, etc)
  * @param  proto            service protocol (_tcp, _udp)
  * @param  port             service port
@@ -209,6 +204,9 @@ esp_err_t mdns_service_add(const char * instance_name, const char * service_type
  *
  * @param  instance_name    instance name to set. If NULL,
  *                          global instance name or hostname will be used
+ *                          Note that MDNS_MULTIPLE_INSTANCE config option
+ *                          needs to be enabled for adding multiple instances
+ *                          with the same instance type.
  * @param  service_type     service type (_http, _ftp, etc)
  * @param  proto            service protocol (_tcp, _udp)
  * @param  hostname         service hostname. If NULL, local hostname will be used.
@@ -237,6 +235,22 @@ esp_err_t mdns_service_add_for_host(const char * instance_name, const char * ser
  *     - false  Service not found.
  */
 bool mdns_service_exists(const char * service_type, const char * proto, const char * hostname);
+
+
+/**
+ * @brief  Check whether a service has been added.
+ *
+ * @param  instance         instance name
+ * @param  service_type     service type (_http, _ftp, etc)
+ * @param  proto            service protocol (_tcp, _udp)
+ * @param  hostname         service hostname. If NULL, checks for the local hostname.
+ *
+ * @return
+ *     - true   Correspondding service has been added.
+ *     - false  Service not found.
+ */
+bool mdns_service_exists_with_instance(const char *instance, const char *service_type, const char *proto,
+                                       const char *hostname);
 
 /**
  * @brief  Remove service from mDNS server
@@ -477,6 +491,24 @@ esp_err_t mdns_service_txt_item_remove(const char * service_type, const char * p
  */
 esp_err_t mdns_service_txt_item_remove_for_host(const char * service_type, const char * proto, const char * hostname,
                                                 const char * key);
+
+/**
+ * @brief  Add subtype for service.
+ *
+ * @param  instance_name    instance name. If NULL, will find the first service with the same service type and protocol.
+ * @param  service_type     service type (_http, _ftp, etc)
+ * @param  proto            service protocol (_tcp, _udp)
+ * @param  hostname         service hostname. If NULL, local hostname will be used.
+ * @param  subtype          The subtype to add.
+ *
+ * @return
+ *     - ESP_OK success
+ *     - ESP_ERR_INVALID_ARG Parameter error
+ *     - ESP_ERR_NOT_FOUND Service not found
+ *     - ESP_ERR_NO_MEM memory error
+ */
+esp_err_t mdns_service_subtype_add_for_host(const char *instance_name, const char *service_type, const char *proto,
+                                            const char *hostname, const char *subtype);
 
 /**
  * @brief  Remove and free all services from mDNS server

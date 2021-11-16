@@ -51,6 +51,7 @@ set(COMMON_SOURCES
     api/entropy_api.cpp
     api/error_api.cpp
     api/heap_api.cpp
+    api/history_tracker_api.cpp
     api/icmp6_api.cpp
     api/instance_api.cpp
     api/ip6_api.cpp
@@ -63,6 +64,7 @@ set(COMMON_SOURCES
     api/message_api.cpp
     api/multi_radio_api.cpp
     api/netdata_api.cpp
+    api/netdata_publisher_api.cpp
     api/netdiag_api.cpp
     api/network_time_api.cpp
     api/ping_sender_api.cpp
@@ -105,14 +107,17 @@ set(COMMON_SOURCES
     common/timer.cpp
     common/tlvs.cpp
     common/trickle_timer.cpp
+    common/uptime.cpp
     crypto/aes_ccm.cpp
     crypto/aes_ecb.cpp
+    crypto/crypto_platform.cpp
     crypto/ecdsa.cpp
     crypto/hkdf_sha256.cpp
     crypto/hmac_sha256.cpp
     crypto/mbedtls.cpp
     crypto/pbkdf2_cmac.cpp
     crypto/sha256.cpp
+    crypto/storage.cpp
     diags/factory_diags.cpp
     mac/channel_mask.cpp
     mac/data_poll_handler.cpp
@@ -172,6 +177,7 @@ set(COMMON_SOURCES
     thread/address_resolver.cpp
     thread/announce_begin_server.cpp
     thread/announce_sender.cpp
+    thread/anycast_locator.cpp
     thread/child_table.cpp
     thread/csl_tx_scheduler.cpp
     thread/discover_scanner.cpp
@@ -195,6 +201,7 @@ set(COMMON_SOURCES
     thread/network_data_leader_ftd.cpp
     thread/network_data_local.cpp
     thread/network_data_notifier.cpp
+    thread/network_data_publisher.cpp
     thread/network_data_service.cpp
     thread/network_data_tlvs.cpp
     thread/network_data_types.cpp
@@ -213,6 +220,7 @@ set(COMMON_SOURCES
     utils/child_supervision.cpp
     utils/flash.cpp
     utils/heap.cpp
+    utils/history_tracker.cpp
     utils/jam_detector.cpp
     utils/lookup_table.cpp
     utils/otns.cpp
@@ -220,6 +228,40 @@ set(COMMON_SOURCES
     utils/ping_sender.cpp
     utils/slaac_address.cpp
     utils/srp_client_buffers.cpp
+)
+
+set(RADIO_COMMON_SOURCES
+    api/diags_api.cpp
+    api/error_api.cpp
+    api/instance_api.cpp
+    api/link_raw_api.cpp
+    api/logging_api.cpp
+    api/random_noncrypto_api.cpp
+    api/tasklet_api.cpp
+    common/error.cpp
+    common/instance.cpp
+    common/logging.cpp
+    common/random_manager.cpp
+    common/string.cpp
+    common/tasklet.cpp
+    common/timer.cpp
+    common/uptime.cpp
+    crypto/aes_ccm.cpp
+    crypto/aes_ecb.cpp
+    crypto/crypto_platform.cpp
+    crypto/storage.cpp
+    diags/factory_diags.cpp
+    mac/link_raw.cpp
+    mac/mac_frame.cpp
+    mac/mac_types.cpp
+    mac/sub_mac.cpp
+    mac/sub_mac_callbacks.cpp
+    radio/radio.cpp
+    radio/radio_callbacks.cpp
+    radio/radio_platform.cpp
+    thread/link_quality.cpp
+    utils/lookup_table.cpp
+    utils/parse_cmdline.cpp
 )
 
 set(OT_VENDOR_EXTENSION "" CACHE STRING "specify a C++ source file built as part of OpenThread core library")
@@ -238,4 +280,11 @@ endif()
 
 if(OT_RCP)
     include(radio.cmake)
+    if (OT_APP_CLI)
+        include(radio_cli.cmake)
+    endif()
 endif()
+
+set_property(SOURCE api/instance_api.cpp
+    APPEND PROPERTY COMPILE_DEFINITIONS "PACKAGE_VERSION=\"${OT_PACKAGE_VERSION}\""
+)

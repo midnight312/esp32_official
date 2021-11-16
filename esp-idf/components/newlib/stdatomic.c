@@ -1,16 +1,8 @@
-// Copyright 2015-2021 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * SPDX-FileCopyrightText: 2015-2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 //replacement for gcc built-in functions
 
@@ -44,15 +36,15 @@
 
 #if SOC_CPU_CORES_NUM == 1
 
-// Single core SoC: atomics can be implemented using portENTER_CRITICAL_NESTED
-// and portEXIT_CRITICAL_NESTED, which disable and enable interrupts.
+// Single core SoC: atomics can be implemented using portSET_INTERRUPT_MASK_FROM_ISR
+// and portCLEAR_INTERRUPT_MASK_FROM_ISR, which disables and enables interrupts.
 #define _ATOMIC_ENTER_CRITICAL() ({ \
-    unsigned state = portENTER_CRITICAL_NESTED(); \
+    unsigned state = portSET_INTERRUPT_MASK_FROM_ISR(); \
     state; \
 })
 
 #define _ATOMIC_EXIT_CRITICAL(state)   do { \
-    portEXIT_CRITICAL_NESTED(state); \
+    portCLEAR_INTERRUPT_MASK_FROM_ISR(state); \
     } while (0)
 
 #else // SOC_CPU_CORES_NUM
@@ -208,6 +200,24 @@ CLANG_DECLARE_ALIAS( __sync_bool_compare_and_swap_ ## n )
 }                                                                                \
 CLANG_DECLARE_ALIAS( __sync_val_compare_and_swap_ ## n )
 
+#define SYNC_LOCK_TEST_AND_SET(n, type) type  CLANG_ATOMIC_SUFFIX(__sync_lock_test_and_set_ ## n)  (type *ptr, type val) \
+{                                                                                \
+    unsigned state = _ATOMIC_ENTER_CRITICAL();                                   \
+    type ret = *ptr;                                                             \
+    *ptr = val;                                                                  \
+    _ATOMIC_EXIT_CRITICAL(state);                                                \
+    return ret;                                                                  \
+}                                                                                \
+CLANG_DECLARE_ALIAS( __sync_lock_test_and_set_ ## n )
+
+#define SYNC_LOCK_RELEASE(n, type) void  CLANG_ATOMIC_SUFFIX(__sync_lock_release_ ## n)  (type *ptr) \
+{                                                                                \
+    unsigned state = _ATOMIC_ENTER_CRITICAL();                                   \
+    *ptr = 0;                                                                    \
+    _ATOMIC_EXIT_CRITICAL(state);                                                \
+}                                                                                \
+CLANG_DECLARE_ALIAS( __sync_lock_release_ ## n )
+
 
 #if !HAS_ATOMICS_32
 
@@ -267,13 +277,27 @@ SYNC_VAL_CMP_EXCHANGE(1, uint8_t)
 SYNC_VAL_CMP_EXCHANGE(2, uint16_t)
 SYNC_VAL_CMP_EXCHANGE(4, uint32_t)
 
+
+SYNC_LOCK_TEST_AND_SET(1, uint8_t)
+SYNC_LOCK_TEST_AND_SET(2, uint16_t)
+SYNC_LOCK_TEST_AND_SET(4, uint32_t)
+
+SYNC_LOCK_RELEASE(1, uint8_t)
+SYNC_LOCK_RELEASE(2, uint16_t)
+SYNC_LOCK_RELEASE(4, uint32_t)
+
+// LLVM has not implemented native atomic load/stores for riscv targets without the Atomic extension. LLVM thread: https://reviews.llvm.org/D47553.
+// Even though GCC does transform them, these libcalls need to be available for the case where a LLVM based project links against IDF.
+ATOMIC_LOAD(1, uint8_t)
+ATOMIC_LOAD(2, uint16_t)
+ATOMIC_LOAD(4, uint32_t)
+ATOMIC_STORE(1, uint8_t)
+ATOMIC_STORE(2, uint16_t)
+ATOMIC_STORE(4, uint32_t)
+
 #endif // !HAS_ATOMICS_32
 
 #if !HAS_ATOMICS_64
-
-ATOMIC_LOAD(8, uint64_t)
-
-ATOMIC_STORE(8, uint64_t)
 
 ATOMIC_EXCHANGE(8, uint64_t)
 
@@ -302,5 +326,13 @@ SYNC_FETCH_OP(xor, 8, uint64_t)
 SYNC_BOOL_CMP_EXCHANGE(8, uint64_t)
 
 SYNC_VAL_CMP_EXCHANGE(8, uint64_t)
+
+SYNC_LOCK_TEST_AND_SET(8, uint64_t)
+SYNC_LOCK_RELEASE(8, uint64_t)
+
+// LLVM has not implemented native atomic load/stores for riscv targets without the Atomic extension. LLVM thread: https://reviews.llvm.org/D47553.
+// Even though GCC does transform them, these libcalls need to be available for the case where a LLVM based project links against IDF.
+ATOMIC_LOAD(8, uint64_t)
+ATOMIC_STORE(8, uint64_t)
 
 #endif // !HAS_ATOMICS_64

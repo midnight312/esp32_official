@@ -38,19 +38,18 @@
 
 #include <openthread/netdata.h>
 
+#include "cli/cli_output.hpp"
 #include "utils/lookup_table.hpp"
 #include "utils/parse_cmdline.hpp"
 
 namespace ot {
 namespace Cli {
 
-class Interpreter;
-
 /**
  * This class implements the Network Data CLI.
  *
  */
-class NetworkData
+class NetworkData : private OutputWrapper
 {
 public:
     typedef Utils::CmdLineParser::Arg Arg;
@@ -58,10 +57,13 @@ public:
     /**
      * Constructor
      *
-     * @param[in]  aInterpreter  The CLI interpreter.
+     * @param[in]  aOutput The CLI console output context
      *
      */
-    explicit NetworkData(Interpreter &aInterpreter);
+    explicit NetworkData(Output &aOutput)
+        : OutputWrapper(aOutput)
+    {
+    }
 
     /**
      * This method interprets a list of CLI arguments.
@@ -103,6 +105,10 @@ private:
     };
 
     otError ProcessHelp(Arg aArgs[]);
+#if OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+    otError ProcessPublish(Arg aArgs[]);
+    otError ProcessUnpublish(Arg aArgs[]);
+#endif
 #if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE || OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
     otError ProcessRegister(Arg aArgs[]);
 #endif
@@ -113,21 +119,24 @@ private:
     void    OutputPrefixes(void);
     void    OutputRoutes(void);
     void    OutputServices(void);
-    void    OutputIp6Prefix(const otIp6Prefix &aPrefix);
     void    OutputPreference(signed int aPreference);
 
     static constexpr Command sCommands[] = {
         {"help", &NetworkData::ProcessHelp},
+#if OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+        {"publish", &NetworkData::ProcessPublish},
+#endif
 #if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE || OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
         {"register", &NetworkData::ProcessRegister},
 #endif
         {"show", &NetworkData::ProcessShow},
         {"steeringdata", &NetworkData::ProcessSteeringData},
+#if OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+        {"unpublish", &NetworkData::ProcessUnpublish},
+#endif
     };
 
     static_assert(Utils::LookupTable::IsSorted(sCommands), "Command Table is not sorted");
-
-    Interpreter &mInterpreter;
 };
 
 } // namespace Cli

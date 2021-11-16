@@ -693,22 +693,23 @@ enum
     SPINEL_NCP_LOG_REGION_OT_NET_DATA = 4,
     SPINEL_NCP_LOG_REGION_OT_ICMP     = 5,
     SPINEL_NCP_LOG_REGION_OT_IP6      = 6,
-    SPINEL_NCP_LOG_REGION_OT_MAC      = 7,
-    SPINEL_NCP_LOG_REGION_OT_MEM      = 8,
-    SPINEL_NCP_LOG_REGION_OT_NCP      = 9,
-    SPINEL_NCP_LOG_REGION_OT_MESH_COP = 10,
-    SPINEL_NCP_LOG_REGION_OT_NET_DIAG = 11,
-    SPINEL_NCP_LOG_REGION_OT_PLATFORM = 12,
-    SPINEL_NCP_LOG_REGION_OT_COAP     = 13,
-    SPINEL_NCP_LOG_REGION_OT_CLI      = 14,
-    SPINEL_NCP_LOG_REGION_OT_CORE     = 15,
-    SPINEL_NCP_LOG_REGION_OT_UTIL     = 16,
-    SPINEL_NCP_LOG_REGION_OT_BBR      = 17,
-    SPINEL_NCP_LOG_REGION_OT_MLR      = 18,
-    SPINEL_NCP_LOG_REGION_OT_DUA      = 19,
-    SPINEL_NCP_LOG_REGION_OT_BR       = 20,
-    SPINEL_NCP_LOG_REGION_OT_SRP      = 21,
-    SPINEL_NCP_LOG_REGION_OT_DNS      = 22,
+    SPINEL_NCP_LOG_REGION_OT_TCP      = 7,
+    SPINEL_NCP_LOG_REGION_OT_MAC      = 8,
+    SPINEL_NCP_LOG_REGION_OT_MEM      = 9,
+    SPINEL_NCP_LOG_REGION_OT_NCP      = 10,
+    SPINEL_NCP_LOG_REGION_OT_MESH_COP = 11,
+    SPINEL_NCP_LOG_REGION_OT_NET_DIAG = 12,
+    SPINEL_NCP_LOG_REGION_OT_PLATFORM = 13,
+    SPINEL_NCP_LOG_REGION_OT_COAP     = 14,
+    SPINEL_NCP_LOG_REGION_OT_CLI      = 15,
+    SPINEL_NCP_LOG_REGION_OT_CORE     = 16,
+    SPINEL_NCP_LOG_REGION_OT_UTIL     = 17,
+    SPINEL_NCP_LOG_REGION_OT_BBR      = 18,
+    SPINEL_NCP_LOG_REGION_OT_MLR      = 19,
+    SPINEL_NCP_LOG_REGION_OT_DUA      = 10,
+    SPINEL_NCP_LOG_REGION_OT_BR       = 21,
+    SPINEL_NCP_LOG_REGION_OT_SRP      = 22,
+    SPINEL_NCP_LOG_REGION_OT_DNS      = 23,
 };
 
 enum
@@ -852,6 +853,12 @@ enum
 
 enum
 {
+    SPINEL_RESET_PLATFORM = 1,
+    SPINEL_RESET_STACK    = 2,
+};
+
+enum
+{
     /**
      * No-Operation command (Host -> NCP)
      *
@@ -869,14 +876,16 @@ enum
     /**
      * Reset NCP command (Host -> NCP)
      *
-     * Encoding: Empty
+     * Encoding: Empty or `C`
      *
      * Causes the NCP to perform a software reset. Due to the nature of
      * this command, the TID is ignored. The host should instead wait
      * for a `CMD_PROP_VALUE_IS` command from the NCP indicating
      * `PROP_LAST_STATUS` has been set to `STATUS_RESET_SOFTWARE`.
      *
-     * The command payload for this command SHOULD be empty.
+     * The optional command payload specifies the reset type, can be
+     * `SPINEL_RESET_PLATFORM` or `SPINEL_RESET_STACK`. Defaults to stack
+     * reset if unspecified.
      *
      * If an error occurs, the value of `PROP_LAST_STATUS` will be emitted
      * instead with the value set to the generated status code for the error.
@@ -4136,7 +4145,7 @@ enum
     SPINEL_PROP_SRP_CLIENT_SERVICES = SPINEL_PROP_OPENTHREAD__BEGIN + 23,
 
     /// SRP Client Host And Services Remove
-    /** Format: `b` : Write only
+    /** Format: `bb` : Write only
      * Required capability: `SPINEL_CAP_SRP_CLIENT`.
      *
      * Writing to this property with starts the remove process of the host info and all services.
@@ -4145,6 +4154,7 @@ enum
      * Format is:
      *
      *    `b` : A boolean indicating whether or not the host key lease should also be cleared.
+     *    `b` : A boolean indicating whether or not to send update to server when host info is not registered.
      *
      */
     SPINEL_PROP_SRP_CLIENT_HOST_SERVICES_REMOVE = SPINEL_PROP_OPENTHREAD__BEGIN + 24,

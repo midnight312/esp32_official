@@ -907,6 +907,16 @@
                 "type": "string"
             },
             {
+                "children": [],
+                "depends_on": "SECURE_BOOT && (IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3)",
+                "help": "If this option is set, ROM bootloader will revoke the public key digest burned in efuse block\nif it fails to verify the signature of software bootloader with it.\nRevocation of keys does not happen when enabling secure boot. Once secure boot is enabled,\nkey revocation checks will be done on subsequent boot-up, while verifying the software bootloader\n\nThis feature provides a strong resistance against physical attacks on the device.\n\nNOTE: Once a digest slot is revoked, it can never be used again to verify an image\nThis can lead to permanent bricking of the device, in case all keys are revoked\nbecause of signature verification failure.",
+                "id": "SECURE_BOOT_ENABLE_AGGRESSIVE_KEY_REVOKE",
+                "name": "SECURE_BOOT_ENABLE_AGGRESSIVE_KEY_REVOKE",
+                "range": null,
+                "title": "Enable Aggressive key revoke strategy",
+                "type": "bool"
+            },
+            {
                 "children": [
                     {
                         "children": [],
@@ -1140,7 +1150,7 @@
                     {
                         "children": [],
                         "depends_on": "SECURE_TARGET_HAS_SECURE_ROM_DL_MODE && <choice SECURE_UART_ROM_DL_MODE>",
-                        "help": "If set, during startup the app will burn an eFuse bit to permanently switch the UART ROM\nDownload Mode into a separate Secure Download mode. This option can only work if\nDownload Mode is not already disabled by eFuse.\n\nSecure Download mode limits the use of Download Mode functions to simple flash read,\nwrite and erase operations, plus a command to return a summary of currently enabled\nsecurity features.\n\nSecure Download mode is not compatible with the esptool.py flasher stub feature,\nespefuse.py, read/writing memory or registers, encrypted download, or any other\nfeatures that interact with unsupported Download Mode commands.\n\nSecure Download mode should be enabled in any application where Flash Encryption\nand/or Secure Boot is enabled. Disabling this option does not immediately cancel\nthe benefits of the security features, but it increases the potential \"attack\nsurface\" for an attacker to try and bypass them with a successful physical attack.\n\nIt is also possible to enable secure download mode at runtime by calling\nesp_efuse_enable_rom_secure_download_mode()",
+                        "help": "If set, during startup the app will burn an eFuse bit to permanently switch the UART ROM\nDownload Mode into a separate Secure Download mode. This option can only work if\nDownload Mode is not already disabled by eFuse.\n\nSecure Download mode limits the use of Download Mode functions to simple flash read,\nwrite and erase operations, plus a command to return a summary of currently enabled\nsecurity features.\n\nSecure Download mode is not compatible with the esptool.py flasher stub feature,\nespefuse.py, read/writing memory or registers, encrypted download, or any other\nfeatures that interact with unsupported Download Mode commands.\n\nSecure Download mode should be enabled in any application where Flash Encryption\nand/or Secure Boot is enabled. Disabling this option does not immediately cancel\nthe benefits of the security features, but it increases the potential \"attack\nsurface\" for an attacker to try and bypass them with a successful physical attack.\n\nIt is also possible to enable secure download mode at runtime by calling\nesp_efuse_enable_rom_secure_download_mode()\n\nNote: Secure Download mode is not available for ESP32 (includes revisions till ECO3).",
                         "id": "SECURE_ENABLE_SECURE_ROM_DL_MODE",
                         "name": "SECURE_ENABLE_SECURE_ROM_DL_MODE",
                         "range": null,
@@ -1342,28 +1352,7 @@
                 "type": "bool"
             },
             {
-                "children": [
-                    {
-                        "children": [
-                            {
-                                "children": [],
-                                "depends_on": "<choice ESPTOOLPY_FLASH_VENDOR>",
-                                "help": null,
-                                "id": "ESPTOOLPY_FLASH_VENDOR_MXIC",
-                                "name": "ESPTOOLPY_FLASH_VENDOR_MXIC",
-                                "range": null,
-                                "title": "MXIC OPI FLASH(MX25UM25645G)",
-                                "type": "bool"
-                            }
-                        ],
-                        "depends_on": "ESPTOOLPY_OCT_FLASH",
-                        "help": null,
-                        "id": "serial-flasher-config-enable-octal-flash-select-opi-flash-vendor",
-                        "name": "ESPTOOLPY_FLASH_VENDOR",
-                        "title": "Select OPI Flash Vendor",
-                        "type": "choice"
-                    }
-                ],
+                "children": [],
                 "depends_on": "IDF_TARGET_ESP32S3",
                 "help": null,
                 "id": "ESPTOOLPY_OCT_FLASH",
@@ -1436,30 +1425,30 @@
                 "children": [
                     {
                         "children": [],
-                        "depends_on": "ESPTOOLPY_FLASH_VENDOR_MXIC && <choice ESPTOOLPY_FLASHMODE_OCT>",
+                        "depends_on": "<choice ESPTOOLPY_FLASH_SAMPLE_MODE>",
                         "help": null,
-                        "id": "ESPTOOLPY_FLASHMODE_OPI_STR",
-                        "name": "ESPTOOLPY_FLASHMODE_OPI_STR",
+                        "id": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR",
+                        "name": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR",
                         "range": null,
-                        "title": "OPI_STR",
+                        "title": "STR Mode",
                         "type": "bool"
                     },
                     {
                         "children": [],
-                        "depends_on": "ESPTOOLPY_FLASH_VENDOR_MXIC && <choice ESPTOOLPY_FLASHMODE_OCT>",
+                        "depends_on": "ESPTOOLPY_OCT_FLASH && <choice ESPTOOLPY_FLASH_SAMPLE_MODE>",
                         "help": null,
-                        "id": "ESPTOOLPY_FLASHMODE_OPI_DTR",
-                        "name": "ESPTOOLPY_FLASHMODE_OPI_DTR",
+                        "id": "ESPTOOLPY_FLASH_SAMPLE_MODE_DTR",
+                        "name": "ESPTOOLPY_FLASH_SAMPLE_MODE_DTR",
                         "range": null,
-                        "title": "OPI_DTR",
+                        "title": "DTR Mode",
                         "type": "bool"
                     }
                 ],
-                "depends_on": "ESPTOOLPY_FLASHMODE_OPI",
+                "depends_on": null,
                 "help": null,
-                "id": "serial-flasher-config-flash-opi-mode",
-                "name": "ESPTOOLPY_FLASHMODE_OCT",
-                "title": "Flash OPI mode",
+                "id": "serial-flasher-config-flash-sampling-mode",
+                "name": "ESPTOOLPY_FLASH_SAMPLE_MODE",
+                "title": "Flash Sampling Mode",
                 "type": "choice"
             },
             {
@@ -1476,7 +1465,7 @@
                 "children": [
                     {
                         "children": [],
-                        "depends_on": "(ESPTOOLPY_FLASHMODE_OPI_STR || !ESPTOOLPY_OCT_FLASH) && <choice ESPTOOLPY_FLASHFREQ>",
+                        "depends_on": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR && <choice ESPTOOLPY_FLASHFREQ>",
                         "help": null,
                         "id": "ESPTOOLPY_FLASHFREQ_120M",
                         "name": "ESPTOOLPY_FLASHFREQ_120M",
@@ -2169,6 +2158,16 @@
                 "name": "COMPILER_WARN_WRITE_STRINGS",
                 "range": null,
                 "title": "Enable -Wwrite-strings warning flag",
+                "type": "bool"
+            },
+            {
+                "children": [],
+                "depends_on": "IDF_TARGET_ARCH_RISCV",
+                "help": "Adds -msave-restore to C/C++ compilation flags.\n\nWhen this flag is enabled, compiler will call library functions to\nsave/restore registers in function prologues/epilogues. This results\nin lower overall code size, at the expense of slightly reduced performance.\n\nThis option can be enabled for RISC-V targets only.",
+                "id": "COMPILER_SAVE_RESTORE_LIBCALLS",
+                "name": "COMPILER_SAVE_RESTORE_LIBCALLS",
+                "range": null,
+                "title": "Enable -msave-restore flag to reduce code size",
                 "type": "bool"
             },
             {
@@ -3723,6 +3722,16 @@
                             },
                             {
                                 "children": [],
+                                "depends_on": null,
+                                "help": "esp32c3 and esp32s3 will reset at wake-up if GPIO is received a small electrostatic\npulse during light sleep, with specific condition\n\n- GPIO needs to be configured as input-mode only\n- The pin receives a small electrostatic pulse, and reset occurs when the pulse\n  voltage is higher than 6 V\n\nFor GPIO set to input mode only, it is not a good practice to leave it open/floating,\nThe hardware design needs to controlled it with determined supply or ground voltage\nis necessary.\n\nThis option provides a software workaround for this issue. Configure to isolate all\nGPIO pins in sleep state.",
+                                "id": "ESP_SLEEP_GPIO_RESET_WORKAROUND",
+                                "name": "ESP_SLEEP_GPIO_RESET_WORKAROUND",
+                                "range": null,
+                                "title": "light sleep GPIO reset workaround",
+                                "type": "bool"
+                            },
+                            {
+                                "children": [],
                                 "depends_on": "SPIRAM",
                                 "help": "When the CS pin of SPIRAM is not pulled up, the sleep current will\nincrease during light sleep. If the CS pin of SPIRAM has an external\npull-up, you do not need to select this option, otherwise, you\nshould enable this option.",
                                 "id": "ESP_SLEEP_PSRAM_LEAKAGE_WORKAROUND",
@@ -4338,7 +4347,7 @@
                     },
                     {
                         "children": [],
-                        "depends_on": "!ESP32_TRAX && !ESP32S2_TRAX",
+                        "depends_on": "!ESP32_TRAX && !ESP32S2_TRAX && !ESP32S3_TRAX",
                         "help": "Debug stubs are used by OpenOCD to execute pre-compiled onboard code\nwhich does some useful debugging stuff, e.g. GCOV data dump.",
                         "id": "ESP_DEBUG_STUBS_ENABLE",
                         "name": "ESP_DEBUG_STUBS_ENABLE",

@@ -178,6 +178,7 @@ LOCAL_SRC_FILES                                                  := \
     src/core/api/entropy_api.cpp                                    \
     src/core/api/error_api.cpp                                      \
     src/core/api/heap_api.cpp                                       \
+    src/core/api/history_tracker_api.cpp                            \
     src/core/api/icmp6_api.cpp                                      \
     src/core/api/instance_api.cpp                                   \
     src/core/api/ip6_api.cpp                                        \
@@ -190,6 +191,7 @@ LOCAL_SRC_FILES                                                  := \
     src/core/api/message_api.cpp                                    \
     src/core/api/multi_radio_api.cpp                                \
     src/core/api/netdata_api.cpp                                    \
+    src/core/api/netdata_publisher_api.cpp                          \
     src/core/api/netdiag_api.cpp                                    \
     src/core/api/network_time_api.cpp                               \
     src/core/api/ping_sender_api.cpp                                \
@@ -232,14 +234,17 @@ LOCAL_SRC_FILES                                                  := \
     src/core/common/timer.cpp                                       \
     src/core/common/tlvs.cpp                                        \
     src/core/common/trickle_timer.cpp                               \
+    src/core/common/uptime.cpp                                      \
     src/core/crypto/aes_ccm.cpp                                     \
     src/core/crypto/aes_ecb.cpp                                     \
+    src/core/crypto/crypto_platform.cpp                             \
     src/core/crypto/ecdsa.cpp                                       \
     src/core/crypto/hkdf_sha256.cpp                                 \
     src/core/crypto/hmac_sha256.cpp                                 \
     src/core/crypto/mbedtls.cpp                                     \
     src/core/crypto/pbkdf2_cmac.cpp                                 \
     src/core/crypto/sha256.cpp                                      \
+    src/core/crypto/storage.cpp                                     \
     src/core/diags/factory_diags.cpp                                \
     src/core/mac/channel_mask.cpp                                   \
     src/core/mac/data_poll_handler.cpp                              \
@@ -299,6 +304,7 @@ LOCAL_SRC_FILES                                                  := \
     src/core/thread/address_resolver.cpp                            \
     src/core/thread/announce_begin_server.cpp                       \
     src/core/thread/announce_sender.cpp                             \
+    src/core/thread/anycast_locator.cpp                             \
     src/core/thread/child_table.cpp                                 \
     src/core/thread/csl_tx_scheduler.cpp                            \
     src/core/thread/discover_scanner.cpp                            \
@@ -322,6 +328,7 @@ LOCAL_SRC_FILES                                                  := \
     src/core/thread/network_data_leader_ftd.cpp                     \
     src/core/thread/network_data_local.cpp                          \
     src/core/thread/network_data_notifier.cpp                       \
+    src/core/thread/network_data_publisher.cpp                      \
     src/core/thread/network_data_service.cpp                        \
     src/core/thread/network_data_tlvs.cpp                           \
     src/core/thread/network_data_types.cpp                          \
@@ -340,6 +347,7 @@ LOCAL_SRC_FILES                                                  := \
     src/core/utils/child_supervision.cpp                            \
     src/core/utils/flash.cpp                                        \
     src/core/utils/heap.cpp                                         \
+    src/core/utils/history_tracker.cpp                              \
     src/core/utils/jam_detector.cpp                                 \
     src/core/utils/lookup_table.cpp                                 \
     src/core/utils/otns.cpp                                         \
@@ -370,6 +378,7 @@ LOCAL_SRC_FILES                                                  := \
     src/posix/platform/settings.cpp                                 \
     src/posix/platform/spi_interface.cpp                            \
     src/posix/platform/system.cpp                                   \
+    src/posix/platform/trel_udp6.cpp                                \
     src/posix/platform/udp.cpp                                      \
     third_party/mbedtls/repo/library/aes.c                          \
     third_party/mbedtls/repo/library/aesni.c                        \
@@ -496,8 +505,10 @@ LOCAL_SRC_FILES                            := \
     src/cli/cli_coap_secure.cpp               \
     src/cli/cli_commissioner.cpp              \
     src/cli/cli_dataset.cpp                   \
+    src/cli/cli_history.cpp                   \
     src/cli/cli_joiner.cpp                    \
     src/cli/cli_network_data.cpp              \
+    src/cli/cli_output.cpp                    \
     src/cli/cli_srp_client.cpp                \
     src/cli/cli_srp_server.cpp                \
     src/cli/cli_tcp.cpp                       \

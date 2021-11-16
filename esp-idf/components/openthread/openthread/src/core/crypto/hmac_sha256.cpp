@@ -32,7 +32,8 @@
  */
 
 #include "hmac_sha256.hpp"
-
+#include "common/debug.hpp"
+#include "common/error.hpp"
 #include "common/message.hpp"
 
 namespace ot {
@@ -40,25 +41,42 @@ namespace Crypto {
 
 HmacSha256::HmacSha256(void)
 {
-    const mbedtls_md_info_t *mdInfo = nullptr;
-    mbedtls_md_init(&mContext);
-    mdInfo = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-    mbedtls_md_setup(&mContext, mdInfo, 1);
+    Error err = kErrorNone;
+
+    mContext.mContext     = mContextStorage;
+    mContext.mContextSize = sizeof(mContextStorage);
+
+    err = otPlatCryptoHmacSha256Init(&mContext);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 HmacSha256::~HmacSha256(void)
 {
-    mbedtls_md_free(&mContext);
+    Error err = otPlatCryptoHmacSha256Deinit(&mContext);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
-void HmacSha256::Start(const uint8_t *aKey, uint16_t aKeyLength)
+void HmacSha256::Start(const Key &aKey)
 {
-    mbedtls_md_hmac_starts(&mContext, aKey, aKeyLength);
+    Error err = otPlatCryptoHmacSha256Start(&mContext, &aKey);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 void HmacSha256::Update(const void *aBuf, uint16_t aBufLength)
 {
-    mbedtls_md_hmac_update(&mContext, reinterpret_cast<const uint8_t *>(aBuf), aBufLength);
+    Error err = otPlatCryptoHmacSha256Update(&mContext, aBuf, aBufLength);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
+}
+
+void HmacSha256::Finish(Hash &aHash)
+{
+    Error err = otPlatCryptoHmacSha256Finish(&mContext, aHash.m8, Hash::kSize);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 void HmacSha256::Update(const Message &aMessage, uint16_t aOffset, uint16_t aLength)
@@ -69,14 +87,9 @@ void HmacSha256::Update(const Message &aMessage, uint16_t aOffset, uint16_t aLen
 
     while (chunk.GetLength() > 0)
     {
-        Update(chunk.GetData(), chunk.GetLength());
+        Update(chunk.GetBytes(), chunk.GetLength());
         aMessage.GetNextChunk(aLength, chunk);
     }
-}
-
-void HmacSha256::Finish(Hash &aHash)
-{
-    mbedtls_md_hmac_finish(&mContext, aHash.m8);
 }
 
 } // namespace Crypto

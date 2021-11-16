@@ -33,6 +33,8 @@
 
 #include "sha256.hpp"
 
+#include "common/debug.hpp"
+#include "common/error.hpp"
 #include "common/message.hpp"
 
 namespace ot {
@@ -40,22 +42,35 @@ namespace Crypto {
 
 Sha256::Sha256(void)
 {
-    mbedtls_sha256_init(&mContext);
+    Error err = kErrorNone;
+
+    mContext.mContext     = mContextStorage;
+    mContext.mContextSize = sizeof(mContextStorage);
+    err                   = otPlatCryptoSha256Init(&mContext);
+
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 Sha256::~Sha256(void)
 {
-    mbedtls_sha256_free(&mContext);
+    Error err = otPlatCryptoSha256Deinit(&mContext);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 void Sha256::Start(void)
 {
-    mbedtls_sha256_starts_ret(&mContext, 0);
+    Error err = otPlatCryptoSha256Start(&mContext);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 void Sha256::Update(const void *aBuf, uint16_t aBufLength)
 {
-    mbedtls_sha256_update_ret(&mContext, reinterpret_cast<const uint8_t *>(aBuf), aBufLength);
+    Error err = otPlatCryptoSha256Update(&mContext, aBuf, aBufLength);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
 
 void Sha256::Update(const Message &aMessage, uint16_t aOffset, uint16_t aLength)
@@ -66,15 +81,16 @@ void Sha256::Update(const Message &aMessage, uint16_t aOffset, uint16_t aLength)
 
     while (chunk.GetLength() > 0)
     {
-        Update(chunk.GetData(), chunk.GetLength());
+        Update(chunk.GetBytes(), chunk.GetLength());
         aMessage.GetNextChunk(aLength, chunk);
     }
 }
 
 void Sha256::Finish(Hash &aHash)
 {
-    mbedtls_sha256_finish_ret(&mContext, aHash.m8);
+    Error err = otPlatCryptoSha256Finish(&mContext, aHash.m8, Hash::kSize);
+    OT_ASSERT(err == kErrorNone);
+    OT_UNUSED_VARIABLE(err);
 }
-
 } // namespace Crypto
 } // namespace ot

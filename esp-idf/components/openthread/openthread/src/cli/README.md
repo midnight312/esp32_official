@@ -52,6 +52,7 @@ Done
 - [factoryreset](#factoryreset)
 - [fake](#fake)
 - [fem](#fem)
+- [history](README_HISTORY.md)
 - [ifconfig](#ifconfig)
 - [ipaddr](#ipaddr)
 - [ipmaddr](#ipmaddr)
@@ -62,6 +63,7 @@ Done
 - [leaderweight](#leaderweight)
 - [linkmetrics](#linkmetrics-mgmt-ipaddr-enhanced-ack-clear)
 - [linkquality](#linkquality-extaddr)
+- [locate](#locate)
 - [log](#log-filename-filename)
 - [mac](#mac-retries-direct)
 - [macfilter](#macfilter)
@@ -105,9 +107,11 @@ Done
 - [state](#state)
 - [srp](README_SRP.md)
 - [thread](#thread-start)
+- [trel](#trel-enable)
 - [txpower](#txpower)
 - [udp](README_UDP.md)
 - [unsecureport](#unsecureport-add-port)
+- [uptime](#uptime)
 - [version](#version)
 
 ## OpenThread Command Details
@@ -353,6 +357,26 @@ Done
 
 ```bash
 > br disable
+Done
+```
+
+### br omrprefix
+
+Get the randomly generated off-mesh-routable prefix of the Border Router.
+
+```bash
+> br omrprefix
+fdfc:1ff5:1512:5622::/64
+Done
+```
+
+### br onlinkprefix
+
+Get the randomly generated on-link prefix of the Border Router.
+
+```bash
+> br onlinkprefix
+fd41:2650:a6f5:0::/64
 Done
 ```
 
@@ -1591,6 +1615,60 @@ Set the link quality on the link to a given extended address.
 Done
 ```
 
+### locate
+
+Gets the current state (`In Progress` or `Idle`) of anycast locator.
+
+`OPENTHREAD_CONFIG_TMF_ANYCAST_LOCATOR_ENABLE` is required.
+
+```bash
+> locate
+Idle
+Done
+
+> locate fdde:ad00:beef:0:0:ff:fe00:fc10
+
+> locate
+In Progress
+Done
+```
+
+### locate \<anycastaddr\>
+
+Locate the closest destination of an anycast address (i.e., find the destination's mesh local EID and RLOC16).
+
+`OPENTHREAD_CONFIG_TMF_ANYCAST_LOCATOR_ENABLE` is required.
+
+The closest destination is determined based on the the current routing table and path costs within the Thread mesh.
+
+Locate the leader using its anycast address:
+
+```bash
+> locate fdde:ad00:beef:0:0:ff:fe00:fc00
+fdde:ad00:beef:0:d9d3:9000:16b:d03b 0xc800
+Done
+```
+
+Locate the closest destination of a service anycast address:
+
+```bash
+
+> srp server enable
+Done
+
+> netdata show
+Prefixes:
+Routes:
+Services:
+44970 5d c002 s c800
+44970 5d c002 s cc00
+Done
+
+> locate fdde:ad00:beef:0:0:ff:fe00:fc10
+fdde:ad00:beef:0:a477:dc98:a4e4:71ea 0xcc00
+done
+```
+
 ### log filename \<filename\>
 
 - Note: Simulation Only, ie: `OPENTHREAD_EXAMPLES_SIMULATION`
@@ -2168,11 +2246,12 @@ Get the external route list in the local Network Data.
 Done
 ```
 
-### route add \<prefix\> [s][prf]
+### route add \<prefix\> [sn][prf]
 
 Add a valid external route to the Network Data.
 
 - s: Stable flag
+- n: NAT64 flag
 - prf: Default Router Preference, which may be: 'high', 'med', or 'low'.
 
 ```bash
@@ -2491,6 +2570,30 @@ Get the Thread Version number.
 Done
 ```
 
+### trel enable
+
+Enable TREL radio link.
+
+`OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE` is required.
+
+Note: TREL radio link can be enabled only when a valid TREL URL was specified.
+
+```bash
+> trel enable
+Done
+```
+
+### trel disable
+
+Disable TREL radio link.
+
+`OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE` is required.
+
+```bash
+> trel disable
+Done
+```
+
 ### txpower
 
 Get the transmit power in dBm.
@@ -2545,6 +2648,32 @@ Print all ports from the allowed unsecured port list.
 > unsecureport get
 1234
 Done
+```
+
+### uptime
+
+This command requires `OPENTHREAD_CONFIG_UPTIME_ENABLE` to be enabled.
+
+Print the OpenThread stack uptime (duration since OpenThread stack initialization).
+
+```bash
+> uptime
+12:46:35.469
+Done
+>
+```
+
+### uptime ms
+
+This command requires `OPENTHREAD_CONFIG_UPTIME_ENABLE` to be enabled.
+
+Print the OpenThread stack uptime in msec.
+
+```bash
+> uptime ms
+426238
+Done
+>
 ```
 
 ### version

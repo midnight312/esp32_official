@@ -42,6 +42,10 @@
 #error "OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE is required for OPENTHREAD_CONFIG_SRP_SERVER_ENABLE"
 #endif
 
+#if !OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE
+#error "OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE is required for OPENTHREAD_CONFIG_SRP_SERVER_ENABLE"
+#endif
+
 #if !OPENTHREAD_CONFIG_ECDSA_ENABLE
 #error "OPENTHREAD_CONFIG_ECDSA_ENABLE is required for OPENTHREAD_CONFIG_SRP_SERVER_ENABLE"
 #endif
@@ -61,8 +65,24 @@
 #include "net/ip6.hpp"
 #include "net/ip6_address.hpp"
 #include "net/udp6.hpp"
+#include "thread/network_data_publisher.hpp"
+
+struct otSrpServerHost
+{
+};
+
+struct otSrpServerService
+{
+};
 
 namespace ot {
+
+namespace Dns {
+namespace ServiceDiscovery {
+class Server;
+}
+} // namespace Dns
+
 namespace Srp {
 
 /**
@@ -71,10 +91,11 @@ namespace Srp {
  */
 class Server : public InstanceLocator, private NonCopyable
 {
-    friend class ot::Notifier;
+    friend class NetworkData::Publisher;
     friend class UpdateMetadata;
     friend class Service;
     friend class Host;
+    friend class Dns::ServiceDiscovery::Server;
 
 public:
     static constexpr uint16_t kUdpPortMin = OPENTHREAD_CONFIG_SRP_SERVER_UDP_PORT_MIN; ///< The reserved min port.
@@ -88,13 +109,33 @@ public:
      */
     typedef otSrpServerServiceUpdateId ServiceUpdateId;
 
+    /**
+     * This enumeration represents the address mode used by the SRP server.
+     *
+     * Address mode specifies how the address and port number are determined by the SRP server and how this info ins
+     * published in the Thread Network Data.
+     *
+     */
+    enum AddressMode : uint8_t
+    {
+        kAddressModeUnicast = OT_SRP_SERVER_ADDRESS_MODE_UNICAST, ///< Unicast address mode.
+        kAddressModeAnycast = OT_SRP_SERVER_ADDRESS_MODE_ANYCAST, ///< Anycast address mode.
+    };
+
     class Host;
+
+    enum State : uint8_t
+    {
+        kStateDisabled = OT_SRP_SERVER_STATE_DISABLED,
+        kStateRunning  = OT_SRP_SERVER_STATE_RUNNING,
+        kStateStopped  = OT_SRP_SERVER_STATE_STOPPED,
+    };
 
     /**
      * This class implements a server-side SRP service.
      *
      */
-    class Service : public LinkedListEntry<Service>, private NonCopyable
+    class Service : public otSrpServerService, public LinkedListEntry<Service>, private NonCopyable
     {
         friend class Server;
         friend class LinkedList<Service>;
@@ -336,7 +377,7 @@ public:
      * This class implements the Host which registers services on the SRP server.
      *
      */
-    class Host : public LinkedListEntry<Host>, public InstanceLocator, private NonCopyable
+    class Host : public otSrpServerHost, public LinkedListEntry<Host>, public InstanceLocator, private NonCopyable
     {
         friend class LinkedListEntry<Host>;
         friend class Server;
@@ -417,12 +458,12 @@ public:
         TimeMilli GetKeyExpireTime(void) const;
 
         /**
-         * This method returns the head of `Service` linked list associated with the host.
+         * This method returns the `Service` linked list associated with the host.
          *
-         * @returns A pointer to the head of `Service` linked list.
+         * @returns The `Service` linked list.
          *
          */
-        const Service *GetServices(void) const { return mServices.GetHead(); }
+        const LinkedList<Service> &GetServices(void) const { return mServices; }
 
         /**
          * This method finds the next matching service on the host.
@@ -461,7 +502,7 @@ public:
         void                        SetKey(Dns::Ecdsa256KeyRecord &aKey);
         void                        SetLease(uint32_t aLease) { mLease = aLease; }
         void                        SetKeyLease(uint32_t aKeyLease) { mKeyLease = aKeyLease; }
-        Service *                   GetServices(void) { return mServices.GetHead(); }
+        LinkedList<Service> &       GetServices(void) { return mServices; }
         Service *                   AddNewService(const char *aServiceName, const char *aInstanceName, bool aIsSubType);
         void                        RemoveService(Service *aService, bool aRetainName, bool aNotifyServiceHandler);
         void                        FreeAllServices(void);
@@ -588,12 +629,60 @@ public:
     Error SetDomain(const char *aDomain);
 
     /**
+     * This method returns the address mode being used by the SRP server.
+     *
+     * @returns The SRP server's address mode.
+     *
+     */
+    AddressMode GetAddressMode(void) const { return mAddressMode; }
+
+    /**
+     * This method sets the address mode to be used by the SRP server.
+     *
+     * @param[in] aMode      The address mode to use.
+     *
+     * @retval kErrorNone           Successfully set the address mode.
+     * @retval kErrorInvalidState   The SRP server is enabled and the address mode cannot be changed.
+     *
+     */
+    Error SetAddressMode(AddressMode aMode);
+
+    /**
+     * This method gets the sequence number used with anycast address mode.
+     *
+     * The sequence number is included in "DNS/SRP Service Anycast Address" entry published in the Network Data.
+     *
+     * @returns The anycast sequence number.
+     *
+     */
+    uint8_t GetAnycastModeSequenceNumber(void) const { return mAnycastSequenceNumber; }
+
+    /**
+     * This method sets the sequence number used with anycast address mode.
+     *
+     * @param[in] aSequenceNumber  The sequence number to use.
+     *
+     * @retval kErrorNone           Successfully set the address mode.
+     * @retval kErrorInvalidState   The SRP server is enabled and the sequence number cannot be changed.
+     *
+     */
+    Error SetAnycastModeSequenceNumber(uint8_t aSequenceNumber);
+
+    /**
      * This method tells whether the SRP server is currently running.
      *
      * @returns  A boolean that indicates whether the server is running.
      *
      */
-    bool IsRunning(void) const { return mSocket.IsBound(); }
+    bool IsRunning(void) const { return (mState == kStateRunning); }
+
+    /**
+     * This method tells the state of the SRP server.
+     *
+     * @returns  An enum that represents the state of the server.
+     *
+     */
+    State GetState(void) const { return mState; }
 
     /**
      * This method enables/disables the SRP server.
@@ -655,6 +744,11 @@ private:
     static constexpr uint32_t kDefaultMaxKeyLease          = 3600u * 24 * 14; // 14 days (in seconds).
     static constexpr uint32_t kDefaultEventsHandlerTimeout = OPENTHREAD_CONFIG_SRP_SERVER_SERVICE_UPDATE_TIMEOUT;
 
+    static constexpr AddressMode kDefaultAddressMode =
+        static_cast<AddressMode>(OPENTHREAD_CONFIG_SRP_SERVER_DEFAULT_ADDDRESS_MODE);
+
+    static constexpr uint16_t kAnycastAddressModePort = 53;
+
     // This class includes metadata for processing a SRP update (register, deregister)
     // and sending DNS response to the client.
     class UpdateMetadata : public InstanceLocator, public LinkedListEntry<UpdateMetadata>
@@ -688,11 +782,18 @@ private:
         UpdateMetadata *  mNext;
     };
 
-    void  Start(void);
-    void  Stop(void);
-    void  HandleNotifierEvents(Events aEvents);
-    Error PublishServerData(void);
-    void  UnpublishServerData(void);
+    void              Start(void);
+    void              Stop(void);
+    void              SelectPort(void);
+    void              PrepareSocket(void);
+    Ip6::Udp::Socket &GetSocket(void);
+
+#if OPENTHREAD_CONFIG_DNSSD_SERVER_ENABLE
+    void  HandleDnssdServerStateChange(void);
+    Error HandleDnssdServerUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+#endif
+
+    void HandleNetDataPublisherEvent(NetworkData::Publisher::Event aEvent);
 
     ServiceUpdateId AllocateId(void) { return mServiceUpdateId++; }
 
@@ -700,10 +801,11 @@ private:
                           const Dns::UpdateHeader &aDnsHeader,
                           Host &                   aHost,
                           const Ip6::MessageInfo & aMessageInfo);
-    void  HandleDnsUpdate(Message &                aMessage,
-                          const Ip6::MessageInfo & aMessageInfo,
-                          const Dns::UpdateHeader &aDnsHeader,
-                          uint16_t                 aOffset);
+    Error ProcessMessage(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+    void  ProcessDnsUpdate(Message &                aMessage,
+                           const Ip6::MessageInfo & aMessageInfo,
+                           const Dns::UpdateHeader &aDnsHeader,
+                           uint16_t                 aOffset);
     Error ProcessUpdateSection(Host &                   aHost,
                                const Message &          aMessage,
                                const Dns::UpdateHeader &aDnsHeader,
@@ -762,6 +864,7 @@ private:
 
     void                  HandleServiceUpdateResult(UpdateMetadata *aUpdate, Error aError);
     const UpdateMetadata *FindOutstandingUpdate(const Ip6::MessageInfo &aMessageInfo, uint16_t aDnsMessageId);
+    static const char *   AddressModeToString(AddressMode aMode);
 
     Ip6::Udp::Socket                mSocket;
     otSrpServerServiceUpdateHandler mServiceUpdateHandler;
@@ -778,7 +881,10 @@ private:
     LinkedList<UpdateMetadata> mOutstandingUpdates;
 
     ServiceUpdateId mServiceUpdateId;
-    bool            mEnabled : 1;
+    uint16_t        mPort;
+    State           mState;
+    AddressMode     mAddressMode;
+    uint8_t         mAnycastSequenceNumber;
     bool            mHasRegisteredAnyService : 1;
 };
 

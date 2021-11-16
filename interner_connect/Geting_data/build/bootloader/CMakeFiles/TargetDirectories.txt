@@ -35,10 +35,13 @@
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/bootloader_support/CMakeFiles/edit_cache.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/edit_cache.dir
-/home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse_test_table.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/show_efuse_table.dir
+/home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse_test_table.dir
+/home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/show-efuse-table.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse_custom_table.dir
+/home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse-custom-table.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse_common_table.dir
+/home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/efuse-common-table.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/rebuild_cache.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/efuse/CMakeFiles/__idf_efuse.dir
 /home/thanh/esp/interner_connect/Geting_data/build/bootloader/esp-idf/esp_system/CMakeFiles/rebuild_cache.dir

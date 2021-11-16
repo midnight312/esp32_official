@@ -190,17 +190,18 @@ Error NetworkDiagnostic::AppendIp6AddressList(Message &aMessage)
 
     tlv.Init();
 
-    for (const Ip6::NetifUnicastAddress *addr = Get<ThreadNetif>().GetUnicastAddresses(); addr; addr = addr->GetNext())
+    for (const Ip6::Netif::UnicastAddress &addr : Get<ThreadNetif>().GetUnicastAddresses())
     {
+        OT_UNUSED_VARIABLE(addr);
         count++;
     }
 
     tlv.SetLength(count * sizeof(Ip6::Address));
     SuccessOrExit(error = aMessage.Append(tlv));
 
-    for (const Ip6::NetifUnicastAddress *addr = Get<ThreadNetif>().GetUnicastAddresses(); addr; addr = addr->GetNext())
+    for (const Ip6::Netif::UnicastAddress &addr : Get<ThreadNetif>().GetUnicastAddresses())
     {
-        SuccessOrExit(error = aMessage.Append(addr->GetAddress()));
+        SuccessOrExit(error = aMessage.Append(addr.GetAddress()));
     }
 
 exit:
@@ -354,11 +355,9 @@ Error NetworkDiagnostic::FillRequestedTlvs(const Message &       aRequest,
 
         case NetworkDiagnosticTlv::kNetworkData:
         {
-            uint8_t netData[NetworkData::NetworkData::kMaxSize];
-            uint8_t length = sizeof(netData);
+            NetworkData::NetworkData &netData = Get<NetworkData::Leader>();
 
-            IgnoreError(Get<NetworkData::Leader>().GetNetworkData(/* aStableOnly */ false, netData, length));
-            SuccessOrExit(error = Tlv::Append<NetworkDataTlv>(aResponse, netData, length));
+            SuccessOrExit(error = Tlv::Append<NetworkDataTlv>(aResponse, netData.GetBytes(), netData.GetLength()));
             break;
         }
 

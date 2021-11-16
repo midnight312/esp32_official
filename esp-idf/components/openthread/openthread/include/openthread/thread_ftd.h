@@ -556,13 +556,26 @@ otError otThreadGetNextCacheEntry(otInstance *aInstance, otCacheEntryInfo *aEntr
  * Get the Thread PSKc
  *
  * @param[in]   aInstance   A pointer to an OpenThread instance.
- *
- * @returns A pointer to Thread PSKc
+ * @param[out]  aPskc       A pointer to an `otPskc` to return the retrieved Thread PSKc.
  *
  * @sa otThreadSetPskc
  *
  */
-const otPskc *otThreadGetPskc(otInstance *aInstance);
+void otThreadGetPskc(otInstance *aInstance, otPskc *aPskc);
+
+/**
+ * Get Key Reference to Thread PSKc stored
+ *
+ * This function requires the build-time feature `OPENTHREAD_CONFIG_PLATFORM_KEY_REFERENCES_ENABLE` to be enabled.
+ *
+ * @param[in]   aInstance   A pointer to an OpenThread instance.
+ *
+ * @returns Key Reference to PSKc
+ *
+ * @sa otThreadSetPskcRef
+ *
+ */
+otPskcRef otThreadGetPskcRef(otInstance *aInstance);
 
 /**
  * Set the Thread PSKc
@@ -581,6 +594,26 @@ const otPskc *otThreadGetPskc(otInstance *aInstance);
  *
  */
 otError otThreadSetPskc(otInstance *aInstance, const otPskc *aPskc);
+
+/**
+ * Set the Thread PSKc
+ *
+ * This function requires the build-time feature `OPENTHREAD_CONFIG_PLATFORM_KEY_REFERENCES_ENABLE` to be enabled.
+ *
+ * This function will only succeed when Thread protocols are disabled.  A successful
+ * call to this function will also invalidate the Active and Pending Operational Datasets in
+ * non-volatile memory.
+ *
+ * @param[in]  aInstance   A pointer to an OpenThread instance.
+ * @param[in]  aPskcRef    Key Reference to the new Thread PSKc.
+ *
+ * @retval OT_ERROR_NONE           Successfully set the Thread PSKc.
+ * @retval OT_ERROR_INVALID_STATE  Thread protocols are enabled.
+ *
+ * @sa otThreadGetPskcRef
+ *
+ */
+otError otThreadSetPskcRef(otInstance *aInstance, otPskcRef aKeyRef);
 
 /**
  * Get the assigned parent priority.
@@ -643,16 +676,16 @@ uint8_t otThreadGetMaxChildIpAddresses(otInstance *aInstance);
 otError otThreadSetMaxChildIpAddresses(otInstance *aInstance, uint8_t aMaxIpAddresses);
 
 /**
- * This enumeration defines the constants used in `otNeighborTableCallback` to indicate whether a child or router
- * neighbor is being added or removed.
+ * This enumeration defines the constants used in `otNeighborTableCallback` to indicate changes in neighbor table.
  *
  */
 typedef enum
 {
-    OT_NEIGHBOR_TABLE_EVENT_CHILD_ADDED,    ///< A child is being added.
-    OT_NEIGHBOR_TABLE_EVENT_CHILD_REMOVED,  ///< A child is being removed.
-    OT_NEIGHBOR_TABLE_EVENT_ROUTER_ADDED,   ///< A router is being added.
-    OT_NEIGHBOR_TABLE_EVENT_ROUTER_REMOVED, ///< A router is being removed.
+    OT_NEIGHBOR_TABLE_EVENT_CHILD_ADDED,        ///< A child is being added.
+    OT_NEIGHBOR_TABLE_EVENT_CHILD_REMOVED,      ///< A child is being removed.
+    OT_NEIGHBOR_TABLE_EVENT_CHILD_MODE_CHANGED, ///< An existing child's mode is changed.
+    OT_NEIGHBOR_TABLE_EVENT_ROUTER_ADDED,       ///< A router is being added.
+    OT_NEIGHBOR_TABLE_EVENT_ROUTER_REMOVED,     ///< A router is being removed.
 } otNeighborTableEvent;
 
 /**
@@ -671,8 +704,7 @@ typedef struct
 } otNeighborTableEntryInfo;
 
 /**
- * This function pointer is called to notify that a child or router neighbor is being added to or removed from neighbor
- * table.
+ * This function pointer is called to notify that there is a change in the neighbor table.
  *
  * @param[in]  aEvent      A event flag.
  * @param[in]  aEntryInfo  A pointer to table entry info.
@@ -683,9 +715,11 @@ typedef void (*otNeighborTableCallback)(otNeighborTableEvent aEvent, const otNei
 /**
  * This function registers a neighbor table callback function.
  *
- * The provided callback (if non-NULL) will be invoked when a child or router neighbor entry is being added/removed
- * to/from the neighbor table. Subsequent calls to this method will overwrite the previous callback.  Note that this
- * callback in invoked while the neighbor/child table is being updated and always before the `otStateChangedCallback`.
+ * The provided callback (if non-NULL) will be invoked when there is a change in the neighbor table (e.g., a child or a
+ * router neighbor entry is being added/removed or an existing child's mode is changed).
+ *
+ * Subsequent calls to this method will overwrite the previous callback.  Note that this callback in invoked while the
+ * neighbor/child table is being updated and always before the `otStateChangedCallback`.
  *
  * @param[in] aInstance  A pointer to an OpenThread instance.
  * @param[in] aCallback  A pointer to callback handler function.

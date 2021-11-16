@@ -10,6 +10,7 @@ set(srcs "port/os_xtensa.c"
     "src/crypto/aes-siv.c"
     "src/crypto/sha256-kdf.c"
     "src/crypto/ccmp.c"
+    "src/crypto/aes-gcm.c"
     "src/crypto/crypto_ops.c"
     "src/crypto/dh_group5.c"
     "src/crypto/dh_groups.c"
@@ -19,6 +20,7 @@ set(srcs "port/os_xtensa.c"
     "src/crypto/sha384-tlsprf.c"
     "src/crypto/sha256-prf.c"
     "src/crypto/sha1-prf.c"
+    "src/crypto/sha384-prf.c"
     "src/crypto/md4-internal.c"
     "src/eap_peer/chap.c"
     "src/eap_peer/eap.c"
@@ -154,8 +156,13 @@ if(CONFIG_WPA_11KV_SUPPORT)
 else()
     set(roaming_src "")
 endif()
+if(CONFIG_WPA_MBO_SUPPORT)
+    set(mbo_src "src/common/mbo.c")
+else()
+    set(mbo_src "")
+endif()
 
-idf_component_register(SRCS "${srcs}" ${esp_srcs} "${tls_src}" "${roaming_src}" "${crypto_src}"
+idf_component_register(SRCS "${srcs}" ${esp_srcs} "${tls_src}" "${roaming_src}" "${crypto_src}" "${mbo_src}"
                     INCLUDE_DIRS include port/include esp_supplicant/include
                     PRIV_INCLUDE_DIRS src src/utils esp_supplicant/src
                     PRIV_REQUIRES mbedtls esp_timer)
@@ -189,5 +196,20 @@ endif()
 if(CONFIG_WPA_WPS_STRICT)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_WPS_STRICT)
 endif()
+if(CONFIG_WPA_SUITE_B_192)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_SUITEB192)
+endif()
+if(CONFIG_WPA_SUITE_B)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_SUITEB)
+endif()
+if(CONFIG_ESP_WIFI_GCMP_SUPPORT)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_GCMP)
+endif()
+if(CONFIG_ESP_WIFI_GMAC_SUPPORT)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_GMAC)
+endif()
 
+if(CONFIG_WPA_MBO_SUPPORT)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_MBO)
+endif()
 set_property(TARGET ${COMPONENT_LIB} APPEND PROPERTY LINK_INTERFACE_MULTIPLICITY 3)

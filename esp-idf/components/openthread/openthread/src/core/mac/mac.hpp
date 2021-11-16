@@ -842,7 +842,6 @@ private:
 #endif
     static const char *OperationToString(Operation aOperation);
 
-    static const otMacKey        sMode2Key;
     static const otExtAddress    sMode2ExtAddress;
     static const otExtendedPanId sExtendedPanidInit;
     static const char            sNetworkNameInit[];
@@ -916,12 +915,15 @@ private:
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     RadioTypes mTxPendingRadioLinks;
+    RadioTypes mTxBeaconRadioLinks;
     Error      mTxError;
 #endif
 
 #if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     Filter mFilter;
 #endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
+
+    KeyMaterial mMode2KeyMaterial;
 };
 
 /**

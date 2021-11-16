@@ -1,13 +1,13 @@
 # Target labels
  bootloader
 # Source files and their labels
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/CMakeFiles/bootloader
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/CMakeFiles/bootloader.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/CMakeFiles/bootloader-complete.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
-/home/thanh/esp_example/esp32-course/_14_Internet_Rest_Client/_14_4_Rest_Refactor/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/home/thanh/esp/interner_connect/Sending_message/build/CMakeFiles/bootloader
+/home/thanh/esp/interner_connect/Sending_message/build/CMakeFiles/bootloader.rule
+/home/thanh/esp/interner_connect/Sending_message/build/CMakeFiles/bootloader-complete.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/thanh/esp/interner_connect/Sending_message/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule

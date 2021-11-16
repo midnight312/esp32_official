@@ -7,12 +7,15 @@ See [README_SRP.md](README_SRP.md).
 ## Command List
 
 - [help](#help)
+- [addrmode](#addrmode)
 - [disable](#disable)
 - [domain](#domain)
 - [enable](#enable)
 - [host](#host)
 - [lease](#lease)
+- [seqnum](#seqnum)
 - [service](#service)
+- [state](#state)
 
 ## Command Details
 
@@ -24,13 +27,43 @@ Print SRP server help menu.
 
 ```bash
 > srp server help
+addrmode
 disable
 domain
 enable
 help
 host
 lease
+seqnum
 service
+state
+Done
+```
+
+### addrmode
+
+Usage: `srp server addrmode [unicast|anycast]`
+
+Get or set the address mode used by the SRP server.
+
+Address mode specifies how the address and port number are determined by the SRP server and this is published in the Thread Network Data.
+
+Get the address mode.
+
+```bash
+> srp server addrmode
+unicast
+Done
+```
+
+Set the address mode.
+
+```bash
+> srp server addrmode anycast
+Done
+
+> srp server addrmode
+anycast
 Done
 ```
 
@@ -114,6 +147,23 @@ Set LEASE and KEY-LEASE values.
 Done
 ```
 
+### seqnum
+
+Usage: `srp server seqnum [<seqnum>]`
+
+Get or set the sequence number used with anycast address mode.
+
+The sequence number is included in "DNS/SRP Service Anycast Address" entry published in the Network Data.
+
+```bash
+> srp server seqnum 20
+Done
+
+> srp server seqnum
+20
+Done
+```
+
 ### service
 
 Usage: `srp server service`
@@ -140,5 +190,21 @@ srp-api-test-0._ipps._tcp.default.service.arpa.
     TXT: 0130
     host: srp-api-test-0.default.service.arpa.
     addresses: [fdde:ad00:beef:0:0:ff:fe00:fc10]
+Done
+```
+
+### state
+
+Usage: `srp server state`
+
+Print the state of the SRP server. It could be `disabled`, `stopped` or `running`.
+
+- disabled: The SRP server is not enabled.
+- stopped: The SRP server is enabled but not active due to existing SRP servers already active in the Thread network. The SRP server may become active when existing SRP servers are no longer active within the Thread network.
+- running: The SRP server is active and will handle service registrations.
+
+```bash
+> srp server state
+running
 Done
 ```

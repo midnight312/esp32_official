@@ -38,7 +38,9 @@
 
 #include <stdio.h>
 
+#include "common/const_cast.hpp"
 #include "common/error.hpp"
+#include "common/iterator_utils.hpp"
 
 namespace ot {
 
@@ -101,6 +103,9 @@ public:
  */
 template <typename Type> class LinkedList
 {
+    class Iterator;
+    class ConstIterator;
+
 public:
     /**
      * This constructor initializes the linked list.
@@ -388,7 +393,7 @@ public:
      */
     Error Find(const Type &aEntry, Type *&aPrevEntry)
     {
-        return const_cast<const LinkedList *>(this)->Find(aEntry, const_cast<const Type *&>(aPrevEntry));
+        return AsConst(this)->Find(aEntry, const_cast<const Type *&>(aPrevEntry));
     }
 
     /**
@@ -455,7 +460,7 @@ public:
     template <typename Indicator>
     Type *FindMatching(const Type *aBegin, const Type *aEnd, const Indicator &aIndicator, Type *&aPrevEntry)
     {
-        return const_cast<Type *>(FindMatching(aBegin, aEnd, aIndicator, const_cast<const Type *&>(aPrevEntry)));
+        return AsNonConst(FindMatching(aBegin, aEnd, aIndicator, const_cast<const Type *&>(aPrevEntry)));
     }
 
     /**
@@ -500,8 +505,7 @@ public:
      */
     template <typename Indicator> Type *FindMatching(const Indicator &aIndicator, Type *&aPrevEntry)
     {
-        return const_cast<Type *>(
-            const_cast<const LinkedList *>(this)->FindMatching(aIndicator, const_cast<const Type *&>(aPrevEntry)));
+        return AsNonConst(AsConst(this)->FindMatching(aIndicator, const_cast<const Type *&>(aPrevEntry)));
     }
 
     /**
@@ -541,7 +545,7 @@ public:
      */
     template <typename Indicator> Type *FindMatching(const Indicator &aIndicator)
     {
-        return const_cast<Type *>(const_cast<const LinkedList *>(this)->FindMatching(aIndicator));
+        return AsNonConst(AsConst(this)->FindMatching(aIndicator));
     }
 
     /**
@@ -571,9 +575,49 @@ public:
      * @returns A pointer to the tail entry in the linked list or nullptr if the list is empty.
      *
      */
-    Type *GetTail(void) { return const_cast<Type *>(const_cast<const LinkedList *>(this)->GetTail()); }
+    Type *GetTail(void) { return AsNonConst(AsConst(this)->GetTail()); }
+
+    // The following methods are intended to support range-based `for`
+    // loop iteration over the linked-list entries and should not be
+    // used directly.
+
+    Iterator begin(void) { return Iterator(GetHead()); }
+    Iterator end(void) { return Iterator(nullptr); }
+
+    ConstIterator begin(void) const { return ConstIterator(GetHead()); }
+    ConstIterator end(void) const { return ConstIterator(nullptr); }
 
 private:
+    class Iterator : public ItemPtrIterator<Type, Iterator>
+    {
+        friend class LinkedList;
+        friend class ItemPtrIterator<Type, Iterator>;
+
+        using ItemPtrIterator<Type, Iterator>::mItem;
+
+        explicit Iterator(Type *aItem)
+            : ItemPtrIterator<Type, Iterator>(aItem)
+        {
+        }
+
+        void Advance(void) { mItem = mItem->GetNext(); }
+    };
+
+    class ConstIterator : public ItemPtrIterator<const Type, ConstIterator>
+    {
+        friend class LinkedList;
+        friend class ItemPtrIterator<const Type, ConstIterator>;
+
+        using ItemPtrIterator<const Type, ConstIterator>::mItem;
+
+        explicit ConstIterator(const Type *aItem)
+            : ItemPtrIterator<const Type, ConstIterator>(aItem)
+        {
+        }
+
+        void Advance(void) { mItem = mItem->GetNext(); }
+    };
+
     Type *mHead;
 };
 

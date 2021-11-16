@@ -1,16 +1,8 @@
-// Copyright 2015-2019 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * SPDX-FileCopyrightText: 2015-2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "sdkconfig.h"
 #include "esp_flash.h"
@@ -27,7 +19,7 @@
 #include "hal/gpio_hal.h"
 #include "esp_flash_internal.h"
 #include "esp_rom_gpio.h"
-#include "spi_flash_private.h"
+#include "esp_private/spi_flash_os.h"
 #if CONFIG_IDF_TARGET_ESP32
 #include "esp32/rom/spi_flash.h"
 #elif CONFIG_IDF_TARGET_ESP32S2
@@ -71,9 +63,9 @@ esp_flash_t *esp_flash_default_chip = NULL;
 #define DEFAULT_FLASH_MODE  SPI_FLASH_DIO
 #elif defined(CONFIG_ESPTOOLPY_FLASHMODE_DOUT)
 #define DEFAULT_FLASH_MODE  SPI_FLASH_DOUT
-#elif defined(CONFIG_ESPTOOLPY_FLASHMODE_OPI_STR)
+#elif defined(CONFIG_ESPTOOLPY_FLASH_SAMPLE_MODE_STR)
 #define DEFAULT_FLASH_MODE SPI_FLASH_OPI_STR
-#elif defined(CONFIG_ESPTOOLPY_FLASHMODE_OPI_DTR)
+#elif defined(CONFIG_ESPTOOLPY_FLASH_SAMPLE_MODE_DTR)
 #define DEFAULT_FLASH_MODE SPI_FLASH_OPI_DTR
 #else
 #define DEFAULT_FLASH_MODE SPI_FLASH_FASTRD
@@ -304,7 +296,7 @@ esp_err_t esp_flash_init_default_chip(void)
 
     // For chips need time tuning, get value directely from system here.
     #if SOC_SPI_MEM_SUPPORT_TIME_TUNING
-    if (spi_timine_config_flash_is_tuned()) {
+    if (spi_timing_is_tuned()) {
         cfg.using_timing_tuning = 1;
         spi_timing_get_flash_timing_param(&cfg.timing_reg);
     }

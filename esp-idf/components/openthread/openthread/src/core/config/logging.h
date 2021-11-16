@@ -174,6 +174,16 @@
 #endif
 
 /**
+ * @def OPENTHREAD_CONFIG_LOG_TCP
+ *
+ * Define to enable IPv6 logging.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_LOG_TCP
+#define OPENTHREAD_CONFIG_LOG_TCP 1
+#endif
+
+/**
  * @def OPENTHREAD_CONFIG_LOG_MAC
  *
  * Define to enable IEEE 802.15.4 MAC logging.
@@ -327,6 +337,16 @@
  */
 #ifndef OPENTHREAD_CONFIG_LOG_DNS
 #define OPENTHREAD_CONFIG_LOG_DNS 1
+#endif
+
+/**
+ * @def OPENTHREAD_CONFIG_LOG_PREPEND_UPTIME
+ *
+ * Define as 1 to prepend the current uptime to all log messages.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_LOG_PREPEND_UPTIME
+#define OPENTHREAD_CONFIG_LOG_PREPEND_UPTIME 0
 #endif
 
 /**

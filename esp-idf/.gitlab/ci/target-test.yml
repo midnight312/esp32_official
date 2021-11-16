@@ -75,7 +75,12 @@ test_weekend_mqtt:
 .example_test_esp32c3_template:
   extends:
     - .example_test_template
-    - .rules:labels:example_test-esp32c3
+    - .rules:test:example_test-esp32c3
+
+.example_test_esp32s3_template:
+  extends:
+    - .example_test_template
+    - .rules:test:example_test-esp32s3
 
 example_test_001A:
   extends: .example_test_esp32_template
@@ -270,20 +275,23 @@ example_test_ESP32_SDSPI:
     - ESP32
     - UT_T1_SPIMODE
 
-# uncomment when ESP32S2 & ESP32C3 runners with external SD connected over SPI are available
-# ensure the runners have required tags created
-#
-#example_test_ESP32S2_SDSPI:
-#  extends: .example_test_esp32s2_template
-#  tags:
-#    - ESP32S2
-#    - UT_T1_SPIMODE
-#
-#example_test_ESP32C3_SDSPI:
-#  extends: .example_test_esp32c3_template
-#  tags:
-#    - ESP32C3
-#    - UT_T1_SPIMODE
+example_test_S3_GENERIC:
+  extends: .example_test_esp32s3_template
+  tags:
+    - ESP32S3
+    - Example_GENERIC
+
+example_test_ESP32S2_SDSPI:
+  extends: .example_test_esp32s2_template
+  tags:
+    - ESP32S2
+    - UT_T1_SPIMODE
+
+example_test_ESP32C3_SDSPI:
+  extends: .example_test_esp32c3_template
+  tags:
+    - ESP32C3
+    - UT_T1_SPIMODE
 
 .test_app_template:
   extends: .target_test_job_template
@@ -305,6 +313,11 @@ example_test_ESP32_SDSPI:
   extends:
     - .test_app_template
     - .rules:test:custom_test-esp32c3
+
+.test_app_esp32s3_template:
+  extends:
+    - .test_app_template
+    - .rules:test:custom_test-esp32s3
 
 test_app_test_001:
   extends: .test_app_esp32_template
@@ -328,7 +341,7 @@ test_app_test_003:
 
 test_app_test_004:
   extends: .test_app_esp32s2_template
-  parallel: 2
+  parallel: 4
   tags:
     - ESP32S2
     - Example_GENERIC
@@ -347,6 +360,24 @@ test_app_test_esp32_generic:
     - Example_GENERIC
   variables:
     SETUP_TOOLS: "1"
+
+test_app_test_flash_psram_f4r4:
+  extends: .test_app_esp32s3_template
+  tags:
+    - ESP32S3
+    - MSPI_F4R4
+
+test_app_test_flash_psram_f4r8:
+  extends: .test_app_esp32s3_template
+  tags:
+    - ESP32S3
+    - MSPI_F4R8
+
+test_app_test_flash_psram_f8r8:
+  extends: .test_app_esp32s3_template
+  tags:
+    - ESP32S3
+    - MSPI_F8R8
 
 .component_ut_template:
   extends: .target_test_job_template
@@ -447,7 +478,7 @@ UT_001:
 
 UT_002:
   extends: .unit_test_esp32_template
-  parallel: 14
+  parallel: 15
   tags:
     - ESP32_IDF
     - UT_T1_1
@@ -644,9 +675,15 @@ UT_S2_SPI_DUAL:
     - ESP32S2_IDF
     - Example_SPI_Multi_device
 
+UT_S2_SDSPI:
+  extends: .unit_test_esp32s2_template
+  tags:
+    - ESP32S2_IDF
+    - UT_T1_SPIMODE
+
 UT_C3:
   extends: .unit_test_esp32c3_template
-  parallel: 32
+  parallel: 33
   tags:
     - ESP32C3_IDF
     - UT_T1_1
@@ -682,9 +719,15 @@ UT_C3_FLASH_SUSPEND:
     - ESP32C3_IDF
     - UT_T1_Flash_Suspend
 
+UT_C3_SDSPI:
+  extends: .unit_test_esp32c3_template
+  tags:
+    - ESP32C3_IDF
+    - UT_T1_SPIMODE
+
 UT_S3:
   extends: .unit_test_esp32s3_template
-  parallel: 29
+  parallel: 31
   tags:
     - ESP32S3_IDF
     - UT_T1_1

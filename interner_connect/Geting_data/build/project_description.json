@@ -6,7 +6,7 @@
     "config_defaults":    "",
     "app_elf":            "mair-template.elf",
     "app_bin":            "mair-template.bin",
-    "git_revision":       "bd15dd14-dirty",
+    "git_revision":       "v5.0-dev-79-gbcbef9a8db-dirty",
     "target":             "esp32",
     "rev":                "0",
     "phy_data_partition": "",

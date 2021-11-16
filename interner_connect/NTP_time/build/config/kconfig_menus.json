@@ -979,6 +979,16 @@
                 "type": "string"
             },
             {
+                "children": [],
+                "depends_on": "SECURE_BOOT && (IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3)",
+                "help": "If this option is set, ROM bootloader will revoke the public key digest burned in efuse block\nif it fails to verify the signature of software bootloader with it.\nRevocation of keys does not happen when enabling secure boot. Once secure boot is enabled,\nkey revocation checks will be done on subsequent boot-up, while verifying the software bootloader\n\nThis feature provides a strong resistance against physical attacks on the device.\n\nNOTE: Once a digest slot is revoked, it can never be used again to verify an image\nThis can lead to permanent bricking of the device, in case all keys are revoked\nbecause of signature verification failure.",
+                "id": "SECURE_BOOT_ENABLE_AGGRESSIVE_KEY_REVOKE",
+                "name": "SECURE_BOOT_ENABLE_AGGRESSIVE_KEY_REVOKE",
+                "range": null,
+                "title": "Enable Aggressive key revoke strategy",
+                "type": "bool"
+            },
+            {
                 "children": [
                     {
                         "children": [],
@@ -1212,7 +1222,7 @@
                     {
                         "children": [],
                         "depends_on": "SECURE_TARGET_HAS_SECURE_ROM_DL_MODE && <choice SECURE_UART_ROM_DL_MODE>",
-                        "help": "If set, during startup the app will burn an eFuse bit to permanently switch the UART ROM\nDownload Mode into a separate Secure Download mode. This option can only work if\nDownload Mode is not already disabled by eFuse.\n\nSecure Download mode limits the use of Download Mode functions to simple flash read,\nwrite and erase operations, plus a command to return a summary of currently enabled\nsecurity features.\n\nSecure Download mode is not compatible with the esptool.py flasher stub feature,\nespefuse.py, read/writing memory or registers, encrypted download, or any other\nfeatures that interact with unsupported Download Mode commands.\n\nSecure Download mode should be enabled in any application where Flash Encryption\nand/or Secure Boot is enabled. Disabling this option does not immediately cancel\nthe benefits of the security features, but it increases the potential \"attack\nsurface\" for an attacker to try and bypass them with a successful physical attack.\n\nIt is also possible to enable secure download mode at runtime by calling\nesp_efuse_enable_rom_secure_download_mode()",
+                        "help": "If set, during startup the app will burn an eFuse bit to permanently switch the UART ROM\nDownload Mode into a separate Secure Download mode. This option can only work if\nDownload Mode is not already disabled by eFuse.\n\nSecure Download mode limits the use of Download Mode functions to simple flash read,\nwrite and erase operations, plus a command to return a summary of currently enabled\nsecurity features.\n\nSecure Download mode is not compatible with the esptool.py flasher stub feature,\nespefuse.py, read/writing memory or registers, encrypted download, or any other\nfeatures that interact with unsupported Download Mode commands.\n\nSecure Download mode should be enabled in any application where Flash Encryption\nand/or Secure Boot is enabled. Disabling this option does not immediately cancel\nthe benefits of the security features, but it increases the potential \"attack\nsurface\" for an attacker to try and bypass them with a successful physical attack.\n\nIt is also possible to enable secure download mode at runtime by calling\nesp_efuse_enable_rom_secure_download_mode()\n\nNote: Secure Download mode is not available for ESP32 (includes revisions till ECO3).",
                         "id": "SECURE_ENABLE_SECURE_ROM_DL_MODE",
                         "name": "SECURE_ENABLE_SECURE_ROM_DL_MODE",
                         "range": null,
@@ -1414,28 +1424,7 @@
                 "type": "bool"
             },
             {
-                "children": [
-                    {
-                        "children": [
-                            {
-                                "children": [],
-                                "depends_on": "<choice ESPTOOLPY_FLASH_VENDOR>",
-                                "help": null,
-                                "id": "ESPTOOLPY_FLASH_VENDOR_MXIC",
-                                "name": "ESPTOOLPY_FLASH_VENDOR_MXIC",
-                                "range": null,
-                                "title": "MXIC OPI FLASH(MX25UM25645G)",
-                                "type": "bool"
-                            }
-                        ],
-                        "depends_on": "ESPTOOLPY_OCT_FLASH",
-                        "help": null,
-                        "id": "serial-flasher-config-enable-octal-flash-select-opi-flash-vendor",
-                        "name": "ESPTOOLPY_FLASH_VENDOR",
-                        "title": "Select OPI Flash Vendor",
-                        "type": "choice"
-                    }
-                ],
+                "children": [],
                 "depends_on": "IDF_TARGET_ESP32S3",
                 "help": null,
                 "id": "ESPTOOLPY_OCT_FLASH",
@@ -1508,30 +1497,30 @@
                 "children": [
                     {
                         "children": [],
-                        "depends_on": "ESPTOOLPY_FLASH_VENDOR_MXIC && <choice ESPTOOLPY_FLASHMODE_OCT>",
+                        "depends_on": "<choice ESPTOOLPY_FLASH_SAMPLE_MODE>",
                         "help": null,
-                        "id": "ESPTOOLPY_FLASHMODE_OPI_STR",
-                        "name": "ESPTOOLPY_FLASHMODE_OPI_STR",
+                        "id": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR",
+                        "name": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR",
                         "range": null,
-                        "title": "OPI_STR",
+                        "title": "STR Mode",
                         "type": "bool"
                     },
                     {
                         "children": [],
-                        "depends_on": "ESPTOOLPY_FLASH_VENDOR_MXIC && <choice ESPTOOLPY_FLASHMODE_OCT>",
+                        "depends_on": "ESPTOOLPY_OCT_FLASH && <choice ESPTOOLPY_FLASH_SAMPLE_MODE>",
                         "help": null,
-                        "id": "ESPTOOLPY_FLASHMODE_OPI_DTR",
-                        "name": "ESPTOOLPY_FLASHMODE_OPI_DTR",
+                        "id": "ESPTOOLPY_FLASH_SAMPLE_MODE_DTR",
+                        "name": "ESPTOOLPY_FLASH_SAMPLE_MODE_DTR",
                         "range": null,
-                        "title": "OPI_DTR",
+                        "title": "DTR Mode",
                         "type": "bool"
                     }
                 ],
-                "depends_on": "ESPTOOLPY_FLASHMODE_OPI",
+                "depends_on": null,
                 "help": null,
-                "id": "serial-flasher-config-flash-opi-mode",
-                "name": "ESPTOOLPY_FLASHMODE_OCT",
-                "title": "Flash OPI mode",
+                "id": "serial-flasher-config-flash-sampling-mode",
+                "name": "ESPTOOLPY_FLASH_SAMPLE_MODE",
+                "title": "Flash Sampling Mode",
                 "type": "choice"
             },
             {
@@ -1548,7 +1537,7 @@
                 "children": [
                     {
                         "children": [],
-                        "depends_on": "(ESPTOOLPY_FLASHMODE_OPI_STR || !ESPTOOLPY_OCT_FLASH) && <choice ESPTOOLPY_FLASHFREQ>",
+                        "depends_on": "ESPTOOLPY_FLASH_SAMPLE_MODE_STR && <choice ESPTOOLPY_FLASHFREQ>",
                         "help": null,
                         "id": "ESPTOOLPY_FLASHFREQ_120M",
                         "name": "ESPTOOLPY_FLASHFREQ_120M",
@@ -2777,6 +2766,16 @@
             },
             {
                 "children": [],
+                "depends_on": "IDF_TARGET_ARCH_RISCV",
+                "help": "Adds -msave-restore to C/C++ compilation flags.\n\nWhen this flag is enabled, compiler will call library functions to\nsave/restore registers in function prologues/epilogues. This results\nin lower overall code size, at the expense of slightly reduced performance.\n\nThis option can be enabled for RISC-V targets only.",
+                "id": "COMPILER_SAVE_RESTORE_LIBCALLS",
+                "name": "COMPILER_SAVE_RESTORE_LIBCALLS",
+                "range": null,
+                "title": "Enable -msave-restore flag to reduce code size",
+                "type": "bool"
+            },
+            {
+                "children": [],
                 "depends_on": null,
                 "help": "Enable this option if using GCC 6 or newer, and wanting to disable warnings which don't appear with\nGCC 5.",
                 "id": "COMPILER_DISABLE_GCC8_WARNINGS",
@@ -2837,7 +2836,7 @@
                     },
                     {
                         "children": [],
-                        "depends_on": "IDF_TARGET_ARCH_XTENSA && !ESP32_TRAX && !ESP32S2_TRAX",
+                        "depends_on": "IDF_TARGET_ARCH_XTENSA && !ESP32_TRAX && !ESP32S2_TRAX && !ESP32S3_TRAX",
                         "help": "Enables/disable TRAX tracing HW.",
                         "id": "APPTRACE_DEST_TRAX",
                         "name": "APPTRACE_DEST_TRAX",
@@ -6302,6 +6301,16 @@
                             {
                                 "children": [],
                                 "depends_on": "BT_BLUEDROID_ENABLED && BT_BLUEDROID_ENABLED",
+                                "help": "Bluetooth Device name length shall be no larger than 248 octets, If the broadcast data cannot contain\nthe complete device name, then only the shortname will be displayed, the rest parts that can't fit in\nwill be truncated.",
+                                "id": "BT_MAX_DEVICE_NAME_LEN",
+                                "name": "BT_MAX_DEVICE_NAME_LEN",
+                                "range": null,
+                                "title": "length of bluetooth device name",
+                                "type": "int"
+                            },
+                            {
+                                "children": [],
+                                "depends_on": "BT_BLUEDROID_ENABLED && BT_BLUEDROID_ENABLED",
                                 "help": "This enables controller RPA list function.\nFor ESP32, ESP32 only support network privacy mode. If this option is enabled, ESP32 will only accept\nadvertising packets from peer devices that contain private address, HW will not receive the advertising\npackets contain identity address after IRK changed. If this option is disabled, address resolution will\nbe performed in the host, so the functions that require controller to resolve address in the white list\ncannot be used. This option is disabled by default on ESP32, please enable or disable this option according\nto your own needs.\n\nFor ESP32C3 and esp32s3, devices support network privacy mode and device privacy mode, users can switch the\ntwo modes according to their own needs. So this option is enabled by default.",
                                 "id": "BT_BLE_RPA_SUPPORTED",
                                 "name": "BT_BLE_RPA_SUPPORTED",
@@ -6397,16 +6406,6 @@
                                         "name": "BT_NIMBLE_LOG_LEVEL_NONE",
                                         "range": null,
                                         "title": "No logs",
-                                        "type": "bool"
-                                    },
-                                    {
-                                        "children": [],
-                                        "depends_on": "<choice BT_NIMBLE_LOG_LEVEL>",
-                                        "help": null,
-                                        "id": "BT_NIMBLE_LOG_LEVEL_CRIT",
-                                        "name": "BT_NIMBLE_LOG_LEVEL_CRIT",
-                                        "range": null,
-                                        "title": "Critical logs",
                                         "type": "bool"
                                     },
                                     {
@@ -11063,6 +11062,16 @@
                             },
                             {
                                 "children": [],
+                                "depends_on": null,
+                                "help": "esp32c3 and esp32s3 will reset at wake-up if GPIO is received a small electrostatic\npulse during light sleep, with specific condition\n\n- GPIO needs to be configured as input-mode only\n- The pin receives a small electrostatic pulse, and reset occurs when the pulse\n  voltage is higher than 6 V\n\nFor GPIO set to input mode only, it is not a good practice to leave it open/floating,\nThe hardware design needs to controlled it with determined supply or ground voltage\nis necessary.\n\nThis option provides a software workaround for this issue. Configure to isolate all\nGPIO pins in sleep state.",
+                                "id": "ESP_SLEEP_GPIO_RESET_WORKAROUND",
+                                "name": "ESP_SLEEP_GPIO_RESET_WORKAROUND",
+                                "range": null,
+                                "title": "light sleep GPIO reset workaround",
+                                "type": "bool"
+                            },
+                            {
+                                "children": [],
                                 "depends_on": "SPIRAM",
                                 "help": "When the CS pin of SPIRAM is not pulled up, the sleep current will\nincrease during light sleep. If the CS pin of SPIRAM has an external\npull-up, you do not need to select this option, otherwise, you\nshould enable this option.",
                                 "id": "ESP_SLEEP_PSRAM_LEAKAGE_WORKAROUND",
@@ -11227,8 +11236,8 @@
                         "children": [],
                         "depends_on": null,
                         "help": "If this option is enabled, NVS will be initialized and calibration data will be loaded from there.\nPHY calibration will be skipped on deep sleep wakeup. If calibration data is not found, full calibration\nwill be performed and stored in NVS. Normally, only partial calibration will be performed.\nIf this option is disabled, full calibration will be performed.\n\nIf it's easy that your board calibrate bad data, choose 'n'.\nTwo cases for example, you should choose 'n':\n1.If your board is easy to be booted up with antenna disconnected.\n2.Because of your board design, each time when you do calibration, the result are too unstable.\nIf unsure, choose 'y'.",
-                        "id": "ESP32_PHY_CALIBRATION_AND_DATA_STORAGE",
-                        "name": "ESP32_PHY_CALIBRATION_AND_DATA_STORAGE",
+                        "id": "ESP_PHY_CALIBRATION_AND_DATA_STORAGE",
+                        "name": "ESP_PHY_CALIBRATION_AND_DATA_STORAGE",
                         "range": null,
                         "title": "Store phy calibration data in NVS",
                         "type": "bool"
@@ -11237,10 +11246,10 @@
                         "children": [
                             {
                                 "children": [],
-                                "depends_on": "ESP32_PHY_INIT_DATA_IN_PARTITION",
+                                "depends_on": "ESP_PHY_INIT_DATA_IN_PARTITION",
                                 "help": "If enabled, PHY init data will be restored to default if\nit cannot be verified successfully to avoid endless bootloops.\n\nIf unsure, choose 'n'.",
-                                "id": "ESP32_PHY_DEFAULT_INIT_IF_INVALID",
-                                "name": "ESP32_PHY_DEFAULT_INIT_IF_INVALID",
+                                "id": "ESP_PHY_DEFAULT_INIT_IF_INVALID",
+                                "name": "ESP_PHY_DEFAULT_INIT_IF_INVALID",
                                 "range": null,
                                 "title": "Reset default PHY init data if invalid",
                                 "type": "bool"
@@ -11249,19 +11258,29 @@
                                 "children": [
                                     {
                                         "children": [],
-                                        "depends_on": "ESP32_SUPPORT_MULTIPLE_PHY_INIT_DATA_BIN && ESP32_PHY_INIT_DATA_IN_PARTITION",
+                                        "depends_on": "ESP_PHY_MULTIPLE_INIT_DATA_BIN && ESP_PHY_INIT_DATA_IN_PARTITION",
+                                        "help": "If enabled, multiple phy init data bin will embedded into app bin\nIf not enabled, multiple phy init data bin will still leave alone, and need to be flashed by users.",
+                                        "id": "ESP_PHY_MULTIPLE_INIT_DATA_BIN_EMBED",
+                                        "name": "ESP_PHY_MULTIPLE_INIT_DATA_BIN_EMBED",
+                                        "range": null,
+                                        "title": "Support embedded multiple phy init data bin to app bin",
+                                        "type": "bool"
+                                    },
+                                    {
+                                        "children": [],
+                                        "depends_on": "ESP_PHY_MULTIPLE_INIT_DATA_BIN && ESP_PHY_INIT_DATA_IN_PARTITION",
                                         "help": "If enabled, when an error occurs while the PHY init data is updated,\nthe program will terminate and restart.\nIf not enabled, the PHY init data will not be updated when an error occurs.",
-                                        "id": "ESP32_PHY_INIT_DATA_ERROR",
-                                        "name": "ESP32_PHY_INIT_DATA_ERROR",
+                                        "id": "ESP_PHY_INIT_DATA_ERROR",
+                                        "name": "ESP_PHY_INIT_DATA_ERROR",
                                         "range": null,
                                         "title": "Terminate operation when PHY init data error",
                                         "type": "bool"
                                     }
                                 ],
-                                "depends_on": "ESP32_PHY_INIT_DATA_IN_PARTITION && ESP32_PHY_INIT_DATA_IN_PARTITION",
+                                "depends_on": "ESP_PHY_INIT_DATA_IN_PARTITION && ESP_PHY_INIT_DATA_IN_PARTITION",
                                 "help": "If enabled, the corresponding PHY init data type can be automatically switched\naccording to the country code. China's PHY init data bin is used by default.\nCan be modified by country information in API esp_wifi_set_country().\nThe priority of switching the PHY init data type is:\n1. Country configured by API esp_wifi_set_country()\nand the parameter policy is WIFI_COUNTRY_POLICY_MANUAL.\n2. Country notified by the connected AP.\n3. Country configured by API esp_wifi_set_country()\nand the parameter policy is WIFI_COUNTRY_POLICY_AUTO.",
-                                "id": "ESP32_SUPPORT_MULTIPLE_PHY_INIT_DATA_BIN",
-                                "name": "ESP32_SUPPORT_MULTIPLE_PHY_INIT_DATA_BIN",
+                                "id": "ESP_PHY_MULTIPLE_INIT_DATA_BIN",
+                                "name": "ESP_PHY_MULTIPLE_INIT_DATA_BIN",
                                 "range": null,
                                 "title": "Support multiple PHY init data bin",
                                 "type": "bool"
@@ -11269,9 +11288,9 @@
                         ],
                         "depends_on": null,
                         "help": "If enabled, PHY init data will be loaded from a partition.\nWhen using a custom partition table, make sure that PHY data\npartition is included (type: 'data', subtype: 'phy').\nWith default partition tables, this is done automatically.\nIf PHY init data is stored in a partition, it has to be flashed there,\notherwise runtime error will occur.\n\nIf this option is not enabled, PHY init data will be embedded\ninto the application binary.\n\nIf unsure, choose 'n'.",
-                        "id": "ESP32_PHY_INIT_DATA_IN_PARTITION",
+                        "id": "ESP_PHY_INIT_DATA_IN_PARTITION",
                         "is_menuconfig": true,
-                        "name": "ESP32_PHY_INIT_DATA_IN_PARTITION",
+                        "name": "ESP_PHY_INIT_DATA_IN_PARTITION",
                         "range": null,
                         "title": "Use a partition to store PHY init data",
                         "type": "menu"
@@ -11280,8 +11299,8 @@
                         "children": [],
                         "depends_on": null,
                         "help": "Set maximum transmit power for WiFi radio. Actual transmit power for high\ndata rates may be lower than this setting.",
-                        "id": "ESP32_PHY_MAX_WIFI_TX_POWER",
-                        "name": "ESP32_PHY_MAX_WIFI_TX_POWER",
+                        "id": "ESP_PHY_MAX_WIFI_TX_POWER",
+                        "name": "ESP_PHY_MAX_WIFI_TX_POWER",
                         "range": [
                             10,
                             20
@@ -11293,8 +11312,8 @@
                         "children": [],
                         "depends_on": null,
                         "help": null,
-                        "id": "ESP32_PHY_MAX_TX_POWER",
-                        "name": "ESP32_PHY_MAX_TX_POWER",
+                        "id": "ESP_PHY_MAX_TX_POWER",
+                        "name": "ESP_PHY_MAX_TX_POWER",
                         "range": null,
                         "title": null,
                         "type": "int"
@@ -11303,8 +11322,8 @@
                         "children": [],
                         "depends_on": "(IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3) && FREERTOS_USE_TICKLESS_IDLE",
                         "help": "If enabled, the MAC and baseband of Wi-Fi and Bluetooth will be powered\ndown when PHY is disabled. Enabling this setting reduces power consumption\nby a small amount but increases RAM use by approximately 4 KB(Wi-Fi only),\n2 KB(Bluetooth only) or 5.3 KB(Wi-Fi + Bluetooth).",
-                        "id": "ESP32_PHY_MAC_BB_PD",
-                        "name": "ESP32_PHY_MAC_BB_PD",
+                        "id": "ESP_PHY_MAC_BB_PD",
+                        "name": "ESP_PHY_MAC_BB_PD",
                         "range": null,
                         "title": "Power down MAC and baseband of Wi-Fi and Bluetooth when PHY is disabled",
                         "type": "bool"
@@ -11313,8 +11332,8 @@
                         "children": [],
                         "depends_on": "ESP32_BROWNOUT_DET",
                         "help": "When brownout reset occurs, reduce PHY TX power to keep the code running.",
-                        "id": "ESP32_REDUCE_PHY_TX_POWER",
-                        "name": "ESP32_REDUCE_PHY_TX_POWER",
+                        "id": "ESP_PHY_REDUCE_TX_POWER",
+                        "name": "ESP_PHY_REDUCE_TX_POWER",
                         "range": null,
                         "title": "Reduce PHY TX power when brownout reset",
                         "type": "bool"
@@ -12030,7 +12049,7 @@
                     },
                     {
                         "children": [],
-                        "depends_on": "!ESP32_TRAX && !ESP32S2_TRAX",
+                        "depends_on": "!ESP32_TRAX && !ESP32S2_TRAX && !ESP32S3_TRAX",
                         "help": "Debug stubs are used by OpenOCD to execute pre-compiled onboard code\nwhich does some useful debugging stuff, e.g. GCOV data dump.",
                         "id": "ESP_DEBUG_STUBS_ENABLE",
                         "name": "ESP_DEBUG_STUBS_ENABLE",
@@ -12554,6 +12573,36 @@
                         "range": null,
                         "title": "Power Management for station at disconnected",
                         "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": "!BT_ENABLED && (IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3)",
+                        "help": "If enabled, HW External coexistence arbitration is managed by GPIO pins.\nIt can support three types of wired combinations so far which are 1-wired/2-wired/3-wired.\nUser can select GPIO pins in application code with configure interfaces.\n\nThis function depends on BT-off\nbecause currently we don't support external coex and internal coex simultaneously.",
+                        "id": "ESP_WIFI_EXTERNAL_COEXIST_ENABLE",
+                        "name": "ESP_WIFI_EXTERNAL_COEXIST_ENABLE",
+                        "range": null,
+                        "title": "WiFi External Coexistence",
+                        "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": "IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3",
+                        "help": "Select this option to enable GCMP support. GCMP support is compulsory for WiFi Suite-B support.",
+                        "id": "ESP_WIFI_GCMP_SUPPORT",
+                        "name": "ESP_WIFI_GCMP_SUPPORT",
+                        "range": null,
+                        "title": "WiFi GCMP Support(GCMP128 and GCMP256)",
+                        "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": null,
+                        "help": "Select this option to enable GMAC support. GMAC support is compulsory for WiFi 192 bit certification.",
+                        "id": "ESP_WIFI_GMAC_SUPPORT",
+                        "name": "ESP_WIFI_GMAC_SUPPORT",
+                        "range": null,
+                        "title": "WiFi GMAC Support(GMAC128 and GMAC256)",
+                        "type": "bool"
                     }
                 ],
                 "depends_on": null,
@@ -12771,6 +12820,19 @@
             },
             {
                 "children": [
+                    {
+                        "children": [],
+                        "depends_on": null,
+                        "help": "Number of volumes (logical drives) to use.",
+                        "id": "FATFS_VOLUME_COUNT",
+                        "name": "FATFS_VOLUME_COUNT",
+                        "range": [
+                            1,
+                            10
+                        ],
+                        "title": "Number of volumes",
+                        "type": "int"
+                    },
                     {
                         "children": [
                             {
@@ -14873,12 +14935,35 @@
                     {
                         "children": [],
                         "depends_on": null,
+                        "help": "This option could be used to disable DHCP client vendor class identification.\nSet this option to \"y\" in order to exclude option 60 from DHCP packets.",
+                        "id": "LWIP_DHCP_DISABLE_VENDOR_CLASS_ID",
+                        "name": "LWIP_DHCP_DISABLE_VENDOR_CLASS_ID",
+                        "range": null,
+                        "title": "DHCP: Disable Use of vendor class identification",
+                        "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": null,
                         "help": "When this option is enabled, DHCP client tries to re-obtain last valid IP address obtained from DHCP\nserver. Last valid DHCP configuration is stored in nvs and restored after reset/power-up. If IP is still\navailable, there is no need for sending discovery message to DHCP server and save some time.",
                         "id": "LWIP_DHCP_RESTORE_LAST_IP",
                         "name": "LWIP_DHCP_RESTORE_LAST_IP",
                         "range": null,
                         "title": "DHCP: Restore last IP obtained from DHCP server",
                         "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": null,
+                        "help": "Set total length of outgoing DHCP option msg. Generally bigger value means it can carry more\noptions and values. If your code meets LWIP_ASSERT due to option value is too long.\nPlease increase the LWIP_DHCP_OPTIONS_LEN value.",
+                        "id": "LWIP_DHCP_OPTIONS_LEN",
+                        "name": "LWIP_DHCP_OPTIONS_LEN",
+                        "range": [
+                            68,
+                            255
+                        ],
+                        "title": "DHCP total option length",
+                        "type": "int"
                     },
                     {
                         "children": [
@@ -17428,6 +17513,16 @@
                         "range": null,
                         "title": "Use BSD sockets for mdns networking",
                         "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": null,
+                        "help": "Enables adding multiple service instances under the same service type.",
+                        "id": "MDNS_MULTIPLE_INSTANCE",
+                        "name": "MDNS_MULTIPLE_INSTANCE",
+                        "range": null,
+                        "title": "Multiple instances under the same service type",
+                        "type": "bool"
                     }
                 ],
                 "depends_on": null,
@@ -18005,7 +18100,18 @@
                                 "type": "bool"
                             },
                             {
-                                "children": [],
+                                "children": [
+                                    {
+                                        "children": [],
+                                        "depends_on": "OPENTHREAD_BORDER_ROUTER",
+                                        "help": "Select this option to enable sending 15.4 frames through the backbone interface.",
+                                        "id": "OPENTHREAD_TREL",
+                                        "name": "OPENTHREAD_TREL",
+                                        "range": null,
+                                        "title": "Enable Thread Radio Encapsulation Link",
+                                        "type": "bool"
+                                    }
+                                ],
                                 "depends_on": "OPENTHREAD_ENABLED",
                                 "help": "Select this option to enable border router features in OpenThread.",
                                 "id": "OPENTHREAD_BORDER_ROUTER",
@@ -19338,6 +19444,16 @@
                         ],
                         "title": "Provisioning auto-stop timeout",
                         "type": "int"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": "BT_ENABLED",
+                        "help": "This option is applicable only when provisioning transport is BLE.",
+                        "id": "WIFI_PROV_BLE_BONDING",
+                        "name": "WIFI_PROV_BLE_BONDING",
+                        "range": null,
+                        "title": "Enable BLE bonding",
+                        "type": "bool"
                     }
                 ],
                 "depends_on": null,
@@ -19365,6 +19481,16 @@
                         "name": "WPA_WAPI_PSK",
                         "range": null,
                         "title": "Enable WAPI PSK support",
+                        "type": "bool"
+                    },
+                    {
+                        "children": [],
+                        "depends_on": null,
+                        "help": "Select this option to enable 192 bit NSA suite-B.\nThis is necessary to support WPA3 192 bit security.",
+                        "id": "WPA_SUITE_B_192",
+                        "name": "WPA_SUITE_B_192",
+                        "range": null,
+                        "title": "Enable NSA suite B support with 192 bit key",
                         "type": "bool"
                     },
                     {
@@ -19404,10 +19530,22 @@
                                 "depends_on": "WPA_11KV_SUPPORT",
                                 "help": "Keep scan results in cache, if not enabled, those\nwill be flushed immediately.",
                                 "id": "WPA_SCAN_CACHE",
+                                "is_menuconfig": true,
                                 "name": "WPA_SCAN_CACHE",
                                 "range": null,
                                 "title": "Keep scan results in cache",
-                                "type": "bool"
+                                "type": "menu"
+                            },
+                            {
+                                "children": [],
+                                "depends_on": "WPA_11KV_SUPPORT",
+                                "help": "Select this option to enable WiFi Multiband operation certification support.",
+                                "id": "WPA_MBO_SUPPORT",
+                                "is_menuconfig": true,
+                                "name": "WPA_MBO_SUPPORT",
+                                "range": null,
+                                "title": "Enable MBO support in supplicant",
+                                "type": "menu"
                             }
                         ],
                         "depends_on": null,

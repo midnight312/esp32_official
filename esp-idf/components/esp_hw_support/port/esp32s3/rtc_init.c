@@ -18,8 +18,11 @@
 #include "regi2c_ulp.h"
 #include "soc_log.h"
 #include "esp_err.h"
+#include "esp_attr.h"
 #include "esp_efuse.h"
 #include "esp_efuse_table.h"
+#include "esp_private/spi_flash_os.h"
+
 
 #define RTC_CNTL_MEM_FORCE_NOISO (RTC_CNTL_SLOWMEM_FORCE_NOISO | RTC_CNTL_FASTMEM_FORCE_NOISO)
 
@@ -178,6 +181,9 @@ void rtc_init(rtc_config_t cfg)
         CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_UNHOLD);
         CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_NOISO);
     }
+    /* force power down wifi and bt power domain */
+    SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_WIFI_FORCE_ISO);
+    SET_PERI_REG_MASK(RTC_CNTL_DIG_PWC_REG, RTC_CNTL_WIFI_FORCE_PD);
 
     REG_WRITE(RTC_CNTL_INT_ENA_REG, 0);
     REG_WRITE(RTC_CNTL_INT_CLR_REG, UINT32_MAX);
@@ -231,8 +237,24 @@ static void set_ocode_by_efuse(int calib_version)
     REGI2C_WRITE_MASK(I2C_ULP, I2C_ULP_IR_FORCE_CODE, 1);
 }
 
+/**
+ * TODO: IDF-4141
+ * 1. This function will change the system clock source to XTAL. Under lower frequency (e.g. XTAL), MSPI timing tuning configures should be modified accordingly.
+ * 2. RTC related should be done before SPI0 initialisation
+ */
 static void calibrate_ocode(void)
 {
+#ifndef BOOTLOADER_BUILD
+    /**
+     * Background:
+     * 1. Following code will switch the system clock to XTAL first, to self-calibrate the OCode.
+     * 2. For some of the MSPI high frequency setting (e.g. 80M DDR mode Flash or PSRAM), timing tuning is required.
+     *    Certain delay will be added to the MSPI RX direction.
+     *
+     * When CPU clock switches down, the delay should be cleared. Therefore here we call this function to remove the delays.
+     */
+    spi_timing_change_speed_mode_cache_safe(true);
+#endif
     /*
     Bandgap output voltage is not precise when calibrate o-code by hardware sometimes, so need software o-code calibration (must turn off PLL).
     Method:
@@ -280,4 +302,8 @@ static void calibrate_ocode(void)
         }
     }
     rtc_clk_cpu_freq_set_config(&old_config);
+#ifndef BOOTLOADER_BUILD
+    //System clock is switched back to PLL. Here we switch to the MSPI high speed mode, add the delays back
+    spi_timing_change_speed_mode_cache_safe(false);
+#endif
 }

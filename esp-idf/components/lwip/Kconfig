@@ -258,6 +258,13 @@ menu "LWIP"
             in the DHCP packets as an option 61)
             Set this option to "y" in order to exclude option 61 from DHCP packets.
 
+    config LWIP_DHCP_DISABLE_VENDOR_CLASS_ID
+        bool "DHCP: Disable Use of vendor class identification"
+        default y
+        help
+            This option could be used to disable DHCP client vendor class identification.
+            Set this option to "y" in order to exclude option 60 from DHCP packets.
+
     config LWIP_DHCP_RESTORE_LAST_IP
         bool "DHCP: Restore last IP obtained from DHCP server"
         default n
@@ -265,6 +272,15 @@ menu "LWIP"
             When this option is enabled, DHCP client tries to re-obtain last valid IP address obtained from DHCP
             server. Last valid DHCP configuration is stored in nvs and restored after reset/power-up. If IP is still
             available, there is no need for sending discovery message to DHCP server and save some time.
+
+    config LWIP_DHCP_OPTIONS_LEN
+        int "DHCP total option length"
+        default 68
+        range 68 255
+        help
+            Set total length of outgoing DHCP option msg. Generally bigger value means it can carry more
+            options and values. If your code meets LWIP_ASSERT due to option value is too long.
+            Please increase the LWIP_DHCP_OPTIONS_LEN value.
 
     menu "DHCP server"
 
