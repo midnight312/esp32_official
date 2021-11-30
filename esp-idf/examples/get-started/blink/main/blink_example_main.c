@@ -19,7 +19,7 @@ static const char *TAG = "example";
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
 */
-#define BLINK_GPIO CONFIG_BLINK_GPIO
+#define BLINK_GPIO 16
 
 static uint8_t s_led_state = 0;
 
@@ -78,6 +78,6 @@ void app_main(void)
         blink_led();
         /* Toggle the LED state */
         s_led_state = !s_led_state;
-        vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }

@@ -22,6 +22,7 @@ $<TARGET_FILE:__idf_esp_netif>
 $<TARGET_FILE:__idf_esp_event>
 $<TARGET_FILE:__idf_wpa_supplicant>
 $<TARGET_FILE:__idf_esp_wifi>
+$<TARGET_FILE:__idf_console>
 $<TARGET_FILE:__idf_lwip>
 $<TARGET_FILE:__idf_log>
 $<TARGET_FILE:__idf_heap>
@@ -39,7 +40,6 @@ $<TARGET_FILE:__idf_cbor>
 $<TARGET_FILE:__idf_unity>
 $<TARGET_FILE:__idf_cmock>
 $<TARGET_FILE:__idf_coap>
-$<TARGET_FILE:__idf_console>
 $<TARGET_FILE:__idf_nghttp>
 $<TARGET_FILE:__idf_esp-tls>
 $<TARGET_FILE:__idf_esp_adc_cal>
