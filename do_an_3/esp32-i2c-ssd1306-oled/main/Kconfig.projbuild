@@ -1,0 +1,11 @@
+menu "WIFI CONNECT"
+
+config WIFI_SSID
+    string "Tenda_DFB070"
+    default "Tenda_DFB070"
+
+config WIFI_PASSWORD
+    string "0398765270"
+    default "0398765270"  
+
+endmenu
