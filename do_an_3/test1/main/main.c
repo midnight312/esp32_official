@@ -69,6 +69,10 @@ static uint8_t display_machine_number;
 NRF24_t dev;
 
 
+//For control machine
+SemaphoreHandle_t  mutexControlCollectionModule;
+TaskHandle_t xTaskTRHandle1 = NULL;
+TaskHandle_t xTaskTRHandle2 = NULL;
 
 void IRAM_ATTR gpio_input_handler(void *args);
 
@@ -119,8 +123,18 @@ void mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
   case MQTT_EVENT_DATA:
     ESP_LOGI(TAG, "MQTT_EVENT_DATA");
     printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-    //printf("DATA=%.*s\r\n", event->data_len, event->data);
     sprintf(temp_control_receive, "%.*s", event->data_len, event->data);
+    if((char)*(event->topic + 19) == '1')
+    {
+      info_garden[0].control = (uint8_t)*event->data;
+      printf("control gardent 1 : %d",info_garden[0].control);
+    }
+    else if ((char)*(event->topic + 19) == '2')
+    {
+      info_garden[2].control = (uint8_t)*event->data;
+      printf("control gardent 2 : %d",info_garden[2].control);  
+    }
+    xSemaphoreGive(mutexControlCollectionModule);
     check_staus_control_receive = 1;
     break;
   case MQTT_EVENT_ERROR:
@@ -155,11 +169,11 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
   mqtt_event_handler_cb(event_data);
 }
 
-void MQTTLogic(int sensorReading)
+void MQTTLogic(int mqttGardentID)
 {
   uint32_t command = 0;
   esp_mqtt_client_config_t mqttConfig  = {
-    .uri = "mqtt://test.mosquitto.org:1883"
+    .uri = "mqtt://broker.mqttdashboard.com:1883"
   };
   esp_mqtt_client_handle_t client = NULL;
 
@@ -175,15 +189,29 @@ void MQTTLogic(int sensorReading)
       break;
     case MQTT_CONNECTED:
       vTaskDelay(100 / portTICK_PERIOD_MS);
-      esp_mqtt_client_subscribe(client, "thanh9112/dht11", 2);
+      if(mqttGardentID == 0)
+      {
+        esp_mqtt_client_subscribe(client, "SmartFarmBK/gardent1", 2);
+      }
+      else if(mqttGardentID == 1)
+      {
+        esp_mqtt_client_subscribe(client, "SmartFarmBK/gardent2", 2);
+      }
       char data[50]; 
-      sprintf(data,"%d",sensorReading);
-      printf("sending data %d", sensorReading);
-      // vTaskDelay(5000 / portTICK_PERIOD_MS);
-      esp_mqtt_client_publish(client, "thanh9112/dht12", data, strlen(data), 2, false);
-     
+      //sprintf(data,"%d",sensorReading);
+      //printf("sending data %d", sensorReading);
+      if(mqttGardentID == 0)
+      {
+        //sprintf(data,"%d",sensorReading);
+        //esp_mqtt_client_publish(client, "SmartFarmBK/gardent1", data, strlen(data), 2, false);
+      }
+      else if(mqttGardentID == 1)
+      {
+        //esp_mqtt_client_publish(client, "SmartFarmBK/gardent2", data, strlen(data), 2, false);
+      }     
       break;
     case MQTT_PUBLISHED:
+      vTaskDelay(5000 / portTICK_PERIOD_MS);
       esp_mqtt_client_stop(client);
       esp_mqtt_client_destroy(client);
       esp_wifi_stop();
@@ -200,27 +228,15 @@ void OnConnected(void *para)
   
   while (true)
   {
-    int senserReading;
-    if(xQueueReceive(readingQueue, &senserReading, portMAX_DELAY))
+    int mqttGardentID;
+    if(xQueueReceive(readingQueue, &mqttGardentID, portMAX_DELAY))
     {
       ESP_ERROR_CHECK(esp_wifi_start());
-      MQTTLogic(senserReading);
+      MQTTLogic(mqttGardentID);
+      
     }
   }
 }
-
-void genrerateReading()
-{
-  while(1)
-  {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    
-    xQueueSend(readingQueue, &random, 2000 / portTICK_PERIOD_MS);
-  }
-}
-
-
-
 
 
 void input_event_callback(int gpio_num)
@@ -256,7 +272,8 @@ void vTimerCallback( TimerHandle_t xTimer )
    else if (ID == 1)
    {
      status_button[1] = 2;
-
+     //send semaphone to transmit to collection module
+     xSemaphoreGive(mutexControlCollectionModule);
    }
  }
 
@@ -312,16 +329,9 @@ void buttonHomeTask(void *params)
             } while(gpio_get_level(num) == 1);
             xTimerStop(xTimers[1], 0);
             //do some work
-            
-            gpio_set_level(2, x);
-            x = 1 - x;
-            if(!status_button[1])
-            {
-              //press
-              status_button[1] = 1;
-                     
-            }
-
+            gpio_set_level(2, 1);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+            gpio_set_level(2, 0);
             // re-enable the interrupt 
              gpio_isr_handler_add(num, gpio_input_handler, (void *)num);
 
@@ -381,14 +391,14 @@ void initGPIO(void)
   {
     info_garden[i].ID = i + 1;
     //info_garden->data = 0;
-    info_garden[i].control = i + 0x15;
+    info_garden[i].control = 0;
   }
   display_machine_number = 0;
 
 
 }
 void resetButton(void)
-{
+{ 
   for(int i = 0; i<3; i++)
   {
     status_button[i] = 0;
@@ -582,55 +592,79 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
 }
 
 //NRF24L01 receive
-void receiver()
+
+void receiverNRF24L01(void *param)
 {
-  uint8_t rbuff[7];
-	uint8_t payload = 7;
-	uint8_t channel = 90;
-	Nrf24_config(&dev, channel, payload);
-	ESP_LOGI(pcTaskGetTaskName(0), "Listening...");
-  
-	while(1) {
+	while(1) {  
+    
+    uint8_t rbuff[7];
+    uint8_t payload = 7;
+    uint8_t channel = 90;
+
+    Nrf24_config(&dev, channel, payload);
 		if (Nrf24_dataReady(&dev)) 
     { 
 			Nrf24_getData(&dev, rbuff);
-			ESP_LOGI(pcTaskGetTaskName(0), "Got data :%s",rbuff);
-      if(rbuff[6] == 0)
+			ESP_LOGI(TAG, "Got data :%s",rbuff);
+      for(uint8_t i = 0; i<6;i++)
       {
-        //do something
+        info_garden[rbuff[6]].data[i] = rbuff[i];
       }
-      else
-      {
-        //do something
-      }
+      //do something
+      xQueueSend(readingQueue, &rbuff[6], 2000 / portTICK_PERIOD_MS);
 		}
-		vTaskDelay(5);
+    
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 
-//NRF24L01 transmiter
-void transmitter_gardent(void *pvParameters)
+
+//tranmister to stm8
+void transmiterNRF24L01(void *pvParameters)
 {
-	uint8_t payload = 2;
-	uint8_t channel = 90;
-	Nrf24_config(&dev, channel, payload);
-	while(1) {
-		uint8_t tbuff[2];
-    tbuff[0] = info_garden[0].control;
-    tbuff[1] = info_garden[1].control;
-		Nrf24_send(&dev, tbuff);				   //Send instructions, send random number value
-		vTaskDelay(5);
-		ESP_LOGI(pcTaskGetTaskName(0), "Wait for sending.....");
-		if (Nrf24_isSend(&dev)) {
-			ESP_LOGI(pcTaskGetTaskName(0),"Send success");
-		} else {
-			ESP_LOGI(pcTaskGetTaskName(0),"Send fail:");
-		}
-    receiver();
-		vTaskDelay(60000/portTICK_PERIOD_MS);
-	}
+  //while(true)
+  //{
+    //xSemaphoreTake(mutexControlCollectionModule, portMAX_DELAY); 
+      gpio_set_level(2, 1);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      gpio_set_level(2, 0); 
+      uint8_t Payload = 2;
+      uint8_t Channel = 90;
+      Nrf24_config(&dev, Channel, Payload);
+      uint8_t value[2];
+      value[0] = info_garden[0].control;
+      value[1] = info_garden[1].control;
+      Nrf24_send(&dev, value);				   //Send instructions, send random number value
+      ESP_LOGI(TAG, "TRANMITED");
+      /*
+      ESP_LOGI(TAG, "Wait for sending.....");
+      if (Nrf24_isSend(&dev)) {
+        ESP_LOGI(TAG,"Send success:%s", value);
+      } else {
+        ESP_LOGI(TAG,"Send fail:");
+      }
+      */
+      vTaskDelete(xTaskTRHandle2);
+  //}
 }
 
+
+
+void generatePeriodicControl(void *Param)
+{
+
+  while (true)
+  {
+    //xSemaphoreGive(mutexControlCollectionModule);
+    //ESP_LOGI(TAG, "HI");
+    vTaskDelete( xTaskTRHandle1);
+    xTaskCreate(transmiterNRF24L01,"tran control", 1024*2, NULL, 8, &xTaskTRHandle2);
+    //vTaskDelay(200 / portTICK_PERIOD_MS);
+    //vTaskDelete( xTaskTRHandle2);
+    xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024, NULL, 7, &xTaskTRHandle1);
+    vTaskDelay(15000 / portTICK_PERIOD_MS);
+  }
+}
 
 
 void Nrf24L01_config(void)
@@ -642,7 +676,6 @@ void Nrf24L01_config(void)
 
   Nrf24_setTADDR(&dev, (uint8_t *)"ABCDE");
   Nrf24_setRADDR_P1(&dev, (uint8_t *)"BCDEF");
-  //Nrf24_setRADDR_P2(&dev, (uint8_t *)"CDEFG");
   Nrf24_printDetails(&dev);
 }
 
@@ -657,7 +690,7 @@ void app_main()
   interputQueueButtonHome = xQueueCreate(10, sizeof(int));
   interputQueueButtonNext = xQueueCreate(10, sizeof(int));
 
-
+  mutexControlCollectionModule = xSemaphoreCreateBinary();
   readingQueue = xQueueCreate(sizeof(int), 10);
 
   initGPIO();
@@ -666,16 +699,15 @@ void app_main()
   Nrf24L01_config();
   xTaskCreate(OnConnected, "handel comms", 1024 * 4, NULL, 5, &taskHandle);
   xTaskCreate(task_display_home,"display on sdd1306", 1024 * 15, NULL, 1, NULL);
-  //xTaskCreate(genrerateReading, "reading input periodic", 1024 * 2, NULL, 6, NULL);
+  
 
 
   xTaskCreate(buttonBackTask, "buttonNextBack", 512, NULL, 10, NULL);
   xTaskCreate(buttonHomeTask, "buttonNextHome", 512, NULL, 10, NULL);
   xTaskCreate(buttonNextTask, "buttonNextNext", 512, NULL, 10, NULL);
 
-
-  xTaskCreate(transmitter_gardent, "TRANS garden", 1024*3, NULL, 8, NULL);;
-  
+  xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 5, &xTaskTRHandle1);
+  xTaskCreate(generatePeriodicControl,"update periodic", 512, NULL, 7, NULL);
 
   //vTaskStartScheduler();
   

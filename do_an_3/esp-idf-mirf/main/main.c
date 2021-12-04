@@ -17,98 +17,89 @@
 #include "mirf.h"
 
 typedef union {
-  uint8_t value[1];
+  uint8_t value[4];
   unsigned long now_time;
 } MYDATA_t;
 
 
 MYDATA_t mydata;
+NRF24_t dev;
 
-
-#if CONFIG_RECEIVER
 void receiver(void *pvParameters)
 {
-	NRF24_t dev;
 
-	ESP_LOGI(pcTaskGetTaskName(0), "Start");
-	ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CE_GPIO=%d",CONFIG_CE_GPIO);
-	ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CSN_GPIO=%d",CONFIG_CSN_GPIO);
-	spi_master_init(&dev, CONFIG_CE_GPIO, CONFIG_CSN_GPIO, CONFIG_MISO_GPIO, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO);
 
-	Nrf24_setRADDR(&dev, (uint8_t *)"FGHIJ");
-	uint8_t payload = sizeof(mydata.value);
-	uint8_t channel = 90;
-	Nrf24_config(&dev, channel, payload);
-	Nrf24_printDetails(&dev);
-	ESP_LOGI(pcTaskGetTaskName(0), "Listening...");
-	uint8_t tbuff[1];
 	while(1) {
+
+	//spi_master_init(&dev, CONFIG_CE_GPIO, CONFIG_CSN_GPIO, CONFIG_MISO_GPIO, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO);
+
+
+	ESP_LOGI(pcTaskGetTaskName(0), "Listening...");
 		if (Nrf24_dataReady(&dev)) { //When the program is received, the received data is output from the serial port
-			Nrf24_getData(&dev, tbuff);
-			ESP_LOGI(pcTaskGetTaskName(0), "Got data:%c",tbuff[0]);
+			Nrf24_getData(&dev, mydata.value);
+			ESP_LOGI(pcTaskGetTaskName(0), "Got data:%lu", mydata.now_time);
 		}
-		vTaskDelay(1);
+		vTaskDelay(1000);
 	}
 }
-#endif
 
 
-#if CONFIG_TRANSMITTER
+
 void transmitter(void *pvParameters)
 {
-	NRF24_t dev;
-	
-	
+
+
 	ESP_LOGI(pcTaskGetTaskName(0), "Start");
 	ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CE_GPIO=%d",CONFIG_CE_GPIO);
 	ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CSN_GPIO=%d",CONFIG_CSN_GPIO);
 	spi_master_init(&dev, CONFIG_CE_GPIO, CONFIG_CSN_GPIO, CONFIG_MISO_GPIO, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO);
 
 	Nrf24_setRADDR(&dev, (uint8_t *)"ABCDE");
-	uint8_t payload = 7;
+	uint8_t payload = sizeof(mydata.value);
 	uint8_t channel = 90;
 	Nrf24_config(&dev, channel, payload);
 	Nrf24_printDetails(&dev);
 
+	//ESP_LOGI(pcTaskGetTaskName(0), "Start");
+	//ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CE_GPIO=%d",CONFIG_CE_GPIO);
+	//ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CSN_GPIO=%d",CONFIG_CSN_GPIO);
+	//spi_master_init(&dev, CONFIG_CE_GPIO, CONFIG_CSN_GPIO, CONFIG_MISO_GPIO, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO);
+
+	//Nrf24_setRADDR(&dev, (uint8_t *)"FGHIJ");
+	payload = sizeof(mydata.value);
+	channel = 90;
+	Nrf24_config(&dev, channel, payload);
+	Nrf24_printDetails(&dev);
+	ESP_LOGI(pcTaskGetTaskName(0), "Listening...");
+
+
 	while(1) {
-		uint8_t value[7];
-		value[0] = 'a';
-		value[1] = 'b';
-		value[2] = 'c';
-		value[3] = 'd';
-		value[4] = 'e';
-		value[5] = 'f';
-		value[6] = 0;
 		mydata.now_time = xTaskGetTickCount();
-		Nrf24_setTADDR(&dev, (uint8_t *)"BCDEF");			//Set the receiver address
-		Nrf24_send(&dev, value);				   //Send instructions, send random number value
+		Nrf24_setTADDR(&dev, (uint8_t *)"FGHIJ");			//Set the receiver address
+		Nrf24_send(&dev, mydata.value);				   //Send instructions, send random number value
 		vTaskDelay(1);
 		ESP_LOGI(pcTaskGetTaskName(0), "Wait for sending.....");
 		if (Nrf24_isSend(&dev)) {
-			ESP_LOGI(pcTaskGetTaskName(0),"Send success:%s", value);
+			ESP_LOGI(pcTaskGetTaskName(0),"Send success:%lu", mydata.now_time);
 		} else {
 			ESP_LOGI(pcTaskGetTaskName(0),"Send fail:");
 		}
-		vTaskDelay(1000/portTICK_PERIOD_MS);
+		vTaskDelay(10000/portTICK_PERIOD_MS);
 	}
 }
 
 
-#endif
 
 	
 #define tag "MIRF"
 
 void app_main(void)
 {
-#if CONFIG_RECEIVER
-	// Create Task
-	xTaskCreate(receiver, "RECV", 1024*2, NULL, 2, NULL);
-#endif
 
-#if CONFIG_TRANSMITTER
-	// Create Task
+	//xTaskCreate(receiver, "RECV", 1024*2, NULL, 2, NULL);
+
+
 	xTaskCreate(transmitter, "TRANS", 1024*2, NULL, 2, NULL);
-#endif
+
 
 }
