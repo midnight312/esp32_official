@@ -140,8 +140,9 @@ void Nrf24_config(NRF24_t * dev, uint8_t channel, uint8_t payload)
 	dev->channel = channel;
 	dev->payload = payload;
 	Nrf24_configRegister(dev, RF_CH, dev->channel);		// Set RF channel
-	Nrf24_configRegister(dev, RX_PW_P0, dev->payload);	// Set length of incoming payload
-	Nrf24_configRegister(dev, RX_PW_P1, dev->payload);
+	Nrf24_configRegister(dev, RX_PW_P0, 7);	// Set length of incoming payload
+	Nrf24_configRegister(dev, RX_PW_P1, 2);
+	Nrf24_configRegister(dev, RX_PW_P2, 2);
 	Nrf24_powerUpRx(dev);						 // Start receiver
 	Nrf24_flushRx(dev);
 }

@@ -284,7 +284,7 @@ void transmiterNRF24L01()
       vTaskDelay(100 / portTICK_PERIOD_MS);
       gpio_set_level(2, 0); 
       uint8_t Payload = 2;
-      uint8_t Channel = 95;
+      uint8_t Channel = 90;
       Nrf24_config(&dev, Channel, Payload);
       uint8_t id_value[2];
       for(uint8_t i = 0; i< 2; i++)
@@ -311,7 +311,7 @@ void generatePeriodicControl(void *Param)
   }
 }
 
-void Nrf24L01_config(void)
+void NRF24L01_config(void)
 {
 	ESP_LOGI(pcTaskGetTaskName(0), "Start");
 	ESP_LOGI(pcTaskGetTaskName(0), "CONFIG_CE_GPIO=%d",CONFIG_CE_GPIO);
@@ -320,6 +320,7 @@ void Nrf24L01_config(void)
 
   Nrf24_setTADDR(&dev, (uint8_t *)"ABCDE");
   Nrf24_setRADDR_P1(&dev, (uint8_t *)"BCDEF");
+  Nrf24_setRADDR_P2(&dev, (uint8_t *)"CDEFG");
   Nrf24_printDetails(&dev);
 }
 
@@ -652,9 +653,9 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
       {
         status_button[1] = 0;
         //transmitor to collection module
-        //vTaskDelete( xTaskTRHandle1);
-        //transmiterNRF24L01();
-        //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024, NULL, 1, &xTaskTRHandle1);
+        vTaskDelete( xTaskTRHandle1);
+        transmiterNRF24L01();
+        xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024, NULL, 1, &xTaskTRHandle1);
         task_display_home();
       }
       else if(status_button[0] == 2)
@@ -711,7 +712,7 @@ void app_main()
   initGPIO();
   wifiInit();
   ssd1306_init(0, 21, 22);
-  Nrf24L01_config();
+  NRF24L01_config();
   xTaskCreate(OnConnected, "handel comms", 1024 * 4, NULL, 2, &taskHandle);
 
   xTaskCreate(task_display_home,"display on sdd1306", 1024 * 15, NULL, 1, NULL);
@@ -722,8 +723,8 @@ void app_main()
   xTaskCreate(buttonNextTask, "buttonNextNext", 512, NULL, 5, NULL);
 
   
-  //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
-  //xTaskCreate(generatePeriodicControl,"update periodic", 512, NULL, 4, NULL);
+  xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
+  xTaskCreate(generatePeriodicControl,"update periodic", 512, NULL, 4, NULL);
 
   //vTaskStartScheduler();
   

@@ -1,3 +1,13 @@
 {
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "files.associations": {
+        "chrono": "c",
+        "functional": "c",
+        "optional": "c",
+        "regex": "c",
+        "system_error": "c",
+        "type_traits": "c",
+        "xlocnum": "c",
+        "xtr1common": "c"
+    }
 }
