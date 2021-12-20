@@ -8,6 +8,13 @@
         "system_error": "c",
         "type_traits": "c",
         "xlocnum": "c",
-        "xtr1common": "c"
+        "xtr1common": "c",
+        "mqtt_client.h": "c",
+        "ssd1306.h": "c",
+        "gpio.h": "c",
+        "array": "c",
+        "vector": "c",
+        "xstring": "c",
+        "xutility": "c"
     }
 }

@@ -63,7 +63,7 @@ void app_main(void)
 {
     
     init_UART();
-    //xTaskCreate(rx_task, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);
+    //xTaskCreatetx_task"uart_rx_task", 1024*2, NULL, 5, NULL);
     ssd1306_init(0, 19, 22);
     //xTaskCreate(&display1, "uart_tx_task", 1024*2, NULL, 5 , NULL);
     //xTaskCreate(&display2, "uart_tx_task", 1024*2, NULL, 4 , NULL);
