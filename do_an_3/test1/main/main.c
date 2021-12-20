@@ -136,12 +136,12 @@ void mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     if((char)*(event->topic + 19) == '1')
     {
       info_garden[0].control = (uint8_t)*event->data;
-      printf("control gardent 1 : %d",info_garden[0].control);
+      printf("control gardent 1 : %d\n\n",info_garden[0].control);
     }
     else if ((char)*(event->topic + 19) == '2')
     {
       info_garden[2].control = (uint8_t)*event->data;
-      printf("control gardent 2 : %d",info_garden[2].control);  
+      printf("control gardent 2 : %d\n\n",info_garden[2].control);  
     }
     check_staus_control_receive = 1;
     break;
@@ -322,10 +322,7 @@ void generatePeriodicControl(void *Param)
   {
     for(uint i = 0; i< NUMBER_GARDENT; i++)
     {
-      uint8_t temp[2];
-      temp[0] = i;
-      temp[1] = info_garden[i].control;
-      uart_write_bytes(i + 1, temp, 2);
+      uart_write_bytes(i + 1, info_garden[i].control, 1);
     }
     vTaskDelay(15000 / portTICK_PERIOD_MS);
   }
@@ -337,14 +334,20 @@ void receiveDataUart(void *Param)
   while(true)
   {
     //gardent 1
-    if(uart_read_bytes(UART_NUM_1, (uint8_t *)temp_data_uart, 6, 200 / portTICK_PERIOD_MS))
+    if(uart_read_bytes(UART_NUM_1, (uint8_t *)temp_data_uart, 1, 200 / portTICK_PERIOD_MS))
     {
+      gpio_set_level(2, 1);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      gpio_set_level(2, 0);
+
       memcpy(info_garden[0].data, temp_data_uart, 6);
+      //printf("info gardent 1 :%.*s",6,info_garden[0].data);
     }
     //gardent 2
     if(uart_read_bytes(UART_NUM_2, (uint8_t *)temp_data_uart, 6, 200 / portTICK_PERIOD_MS))
     {
       memcpy(info_garden[1].data, temp_data_uart, 6);
+      //printf("info gardent 2 :%.*s",6,info_garden[1].data);
     } 
 
   }
@@ -757,7 +760,7 @@ void app_main()
   //NRF24L01_config();
   xTaskCreate(OnConnected, "handel comms", 1024 * 4, NULL, 2, &taskHandle);
 
-  xTaskCreate(task_display_home,"display on sdd1306", 1024 * 15, NULL, 1, NULL);
+  //xTaskCreate(task_display_home,"display on sdd1306", 1024 * 15, NULL, 1, NULL);
   
 
   xTaskCreate(buttonBackTask, "buttonNextBack", 512, NULL, 5, NULL);
@@ -767,7 +770,7 @@ void app_main()
   
   //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 1, NULL);
-  xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
+  //xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 1, NULL);
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
   //vTaskStartScheduler();
