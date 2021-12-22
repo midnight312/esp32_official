@@ -67,7 +67,7 @@ void uart_event_task(void *params)
 }
 */
 void init_UART(void) {
-    const uart_config_t uart_config = {
+    const uart_config_t uart_config_1 = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
@@ -75,14 +75,25 @@ void init_UART(void) {
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_APB,
     };
+
+    const uart_config_t uart_config_2 = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_APB,
+    };
+
     // We won't use a buffer for sending data.
     uart_driver_install(UART_NUM_1, 1024 * 2, 0, 0, NULL, 0);
-    uart_param_config(UART_NUM_1, &uart_config);
+    uart_param_config(UART_NUM_1, &uart_config_1);
     uart_set_pin(UART_NUM_1, TXD_PIN_UART_1, RXD_PIN_UART_1, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     uart_driver_install(UART_NUM_2, 1024 * 2, 0, 0, NULL, 0);
-    uart_param_config(UART_NUM_2, &uart_config);
-    uart_set_pin(UART_NUM_1, TXD_PIN_UART_2, RXD_PIN_UART_2, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_param_config(UART_NUM_2, &uart_config_2);
+    uart_set_pin(UART_NUM_2, TXD_PIN_UART_2, RXD_PIN_UART_2, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
 }
 
 
