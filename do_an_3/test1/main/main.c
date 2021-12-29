@@ -79,10 +79,10 @@ TaskHandle_t xTaskTRHandle2 = NULL;
 void IRAM_ATTR gpio_input_handler(void *args);
 
 /*Define function */
-void task_display_home(void);
-void task_display_menu(info_garden_t *info_garden);
-void task_display_garden(info_garden_t *_info_garden);
-void task_display_garden_machine(info_garden_t *info_garden, uint8_t machine_number);
+void display_home(void);
+void display_menu(info_garden_t *info_garden);
+void display_garden(info_garden_t *_info_garden);
+void display_garden_machine(info_garden_t *info_garden, uint8_t machine_number);
 
 /*
 
@@ -104,7 +104,7 @@ void OnGotData(char *incomingBuffer, char* output)
 */
 
 
-/******************************************************__M_Q_T_T__*****************************************************/
+/*================================================== M_Q_T_T ==================================================*/
 
 
 
@@ -235,7 +235,7 @@ void OnConnected(void *para)
 }
 
 
-/*******************************************************_RNF24L01_*******************************************************/
+/*================================================== RNF24L01 ==================================================*/
 
 /*
 //NRF24L01 receive
@@ -362,7 +362,7 @@ void generatePeriodicData(void *Param)
 
 
 
-/******************************************************* BUTTON *******************************************************/
+/*====================================================== BUTTON ======================================================*/
 
 
 
@@ -534,17 +534,17 @@ void resetButton(void)
   }
 }
 
-/*******************************************************_DISPLAY_SSD1306_*******************************************************/
+/*====================================================== DISPLAY_SSD1306 ======================================================*/
 
 
-void task_display_home()
+void task_display_home(void *params)
 {
   
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
 	ssd1306_draw_string(0, 20, 30, "HOME HOME 1", 2, 0);
 	ssd1306_refresh(0, true);
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
   while(1)
   {
@@ -552,14 +552,33 @@ void task_display_home()
     if(status_button[1] == 1)
     {
       status_button[1] = 0;
-      task_display_menu(&info_garden[0]);
-      ESP_LOGI(TAG, "PRESS");
+      display_menu(&info_garden[0]);
+    }
+    vTaskDelay(10 / portTICK_RATE_MS);
+  }
+}
+
+void display_home()
+{
+  ssd1306_clear(0);
+  ssd1306_select_font(0, 1);
+	ssd1306_draw_string(0, 20, 30, "HOME HOME 1", 2, 0);
+	ssd1306_refresh(0, true);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  resetButton();
+  while(1)
+  {
+    
+    if(status_button[1] == 1)
+    {
+      status_button[1] = 0;
+      display_menu(&info_garden[0]);
     }
   }
 }
 
 
-void task_display_menu(info_garden_t *_info_garden)
+void display_menu(info_garden_t *_info_garden)
 {
   char string_temp[64];
   sprintf(string_temp, "garden %d",_info_garden->ID);
@@ -576,19 +595,19 @@ void task_display_menu(info_garden_t *_info_garden)
     {
       
       status_button[1] = 0;
-      task_display_garden(&info_garden[_info_garden->ID - 1]);
+      display_garden(&info_garden[_info_garden->ID - 1]);
     }
     else if((status_button[1] == 2) || (status_button[0] == 2))
     {
       status_button[0] = 0;
       status_button[1] = 0;
-      task_display_home();
+      display_home();
     }
     else if(status_button[0] + status_button[2] != 0)
     {
       status_button[0] = 0;
       status_button[2] = 0;
-      task_display_menu(&info_garden[temp]);
+      display_menu(&info_garden[temp]);
     }
   }
 }
@@ -597,7 +616,7 @@ void task_display_menu(info_garden_t *_info_garden)
 
 
 
-void task_display_garden(info_garden_t *_info_garden)
+void display_garden(info_garden_t *_info_garden)
 {
     char string_temp[128];
     sprintf(string_temp,"info garden %d",_info_garden->ID);
@@ -625,23 +644,28 @@ void task_display_garden(info_garden_t *_info_garden)
       if(status_button[1] == 1)
       {
         status_button[1] = 0;
-        task_display_garden_machine(&info_garden[_info_garden->ID - 1], 0);
+        display_garden_machine(&info_garden[_info_garden->ID - 1], 0);
       }
       else if(status_button[1] == 2)
       {
         status_button[1] = 0;
-        task_display_home();
+        display_home();
       }
       else if(status_button[0] == 2)
       {
         status_button[0] = 0;
-        task_display_menu(&info_garden[_info_garden->ID - 1]);
+        display_menu(&info_garden[_info_garden->ID - 1]);
+      }
+      else if(status_button[0] == 1)
+      {
+        status_button[0] = 0;
+        display_garden(&info_garden[1 - (_info_garden->ID - 1)]);
       }
 
     }
 }
 
-void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number)
+void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number)
 {
     char string_temp[128];
     char temp_convert[2];
@@ -683,7 +707,7 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
       {
         status_button[1] = 0;
         _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
-        task_display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
+        display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
       if(status_button[1] == 2)
       {
@@ -692,12 +716,12 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
         //vTaskDelete( xTaskTRHandle1);
         //transmiterNRF24L01();
         //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024, NULL, 1, &xTaskTRHandle1);
-        task_display_home();
+        display_home();
       }
       else if(status_button[0] == 2)
       {
         status_button[0] = 0;
-        task_display_menu(&info_garden[_info_garden->ID - 1]);
+        display_menu(&info_garden[_info_garden->ID - 1]);
       }
       else if(status_button[0] == 1)
       {
@@ -707,7 +731,7 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
         {
           machine_number_temp = 0;
         }
-        task_display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
+        display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
       else if(status_button[2] == 1)
       {
@@ -717,19 +741,19 @@ void task_display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_n
         {
           machine_number_temp = 0;
         } 
-        task_display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
+        display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
       else if(status_button[1] == 1)
       {
         status_button[1] = 0;
         _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
-        task_display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
+        display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
     }
 }
 
 
-/************************************************ MAIN *********************************************************/
+/*====================================================== MAIN ======================================================*/
 
 void app_main()
 {
@@ -749,9 +773,10 @@ void app_main()
   ssd1306_init(0, 21, 22);
   init_UART();
   //NRF24L01_config();
+
   xTaskCreate(OnConnected, "handel comms", 1024 * 4, NULL, 2, &taskHandle);
 
-  xTaskCreate(task_display_home,"display on sdd1306", 1024 * 15, NULL, 1, NULL);
+  xTaskCreate(task_display_home,"display on sdd1306", 1024 * 5, NULL, 1, NULL);
   
 
   xTaskCreate(buttonBackTask, "buttonNextBack", 512, NULL, 5, NULL);
@@ -760,8 +785,9 @@ void app_main()
 
   
   //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
+
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 3, NULL);
-  //xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
+  xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 2, NULL);
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
   //vTaskStartScheduler();
