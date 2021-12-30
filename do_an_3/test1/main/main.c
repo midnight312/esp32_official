@@ -135,14 +135,14 @@ void mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     sprintf(temp_control_receive, "%.*s", event->data_len, event->data);
     if((char)*(event->topic + 19) == '1')
     {
-      info_garden[0].control = (uint8_t)*event->data;
-      printf("control gardent 1 : %d\n\n",info_garden[0].control);
+      //info_garden[0].control = (uint8_t)*event->data;
+      printf("Control Gardent 1 : %d\n\n",info_garden[0].control);
     }
-    else if ((char)*(event->topic + 19) == '2')
-    {
-      info_garden[2].control = (uint8_t)*event->data;
-      printf("control gardent 2 : %d\n\n",info_garden[2].control);  
-    }
+    //else if ((char)*(event->topic + 19) == '2')
+    //{
+    //  info_garden[2].control = (uint8_t)*event->data;
+    //  printf("control gardent 2 : %d\n\n",info_garden[2].control);  
+    //}
     check_staus_control_receive = 1;
     break;
   case MQTT_EVENT_ERROR:
@@ -200,11 +200,11 @@ void MQTTLogic(int number)
 
       esp_mqtt_client_subscribe(client, "SmartFarmBK/gardent1", 2);
 
-      esp_mqtt_client_subscribe(client, "SmartFarmBK/gardent2", 2);
+      //esp_mqtt_client_subscribe(client, "SmartFarmBK/gardent2", 2);
 
       esp_mqtt_client_publish(client, "SmartFarmBK/gardent1", (char *)info_garden[0].data, 6, 2, false);
 
-      esp_mqtt_client_publish(client, "SmartFarmBK/gardent2", (char *)info_garden[1].data, 6, 2, false);     
+      //esp_mqtt_client_publish(client, "SmartFarmBK/gardent2", (char *)info_garden[1].data, 6, 2, false);     
       break;
     case MQTT_PUBLISHED:
       vTaskDelay(5000 / portTICK_PERIOD_MS);
@@ -328,8 +328,8 @@ void generatePeriodicControl(void *Param)
       uart_write_bytes(info_garden[i].ID, temp, 1 );
     }
     //gpio_set_level(2, 0);
-    ESP_LOGI(TAG,"control gardent 1: %s     control gardent 2: %s",(uint8_t *)info_garden[0].data, (uint8_t *)info_garden[1].data);
-    vTaskDelay(15000 / portTICK_PERIOD_MS);
+    ESP_LOGI(TAG,"data gardent 1: %s     data gardent 2: %s",(uint8_t *)info_garden[0].data, (uint8_t *)info_garden[1].data);
+    vTaskDelay(30000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -341,6 +341,7 @@ void receiveDataUart(void *Param)
     //gardent 1
     uart_read_bytes(UART_NUM_1, (uint8_t *)info_garden[0].data, 6, 100);
     uart_read_bytes(UART_NUM_2, (uint8_t *)info_garden[1].data, 6, 100);
+    vTaskDelay(1000 / portTICK_RATE_MS);
   }
 }
 
@@ -349,10 +350,10 @@ void generatePeriodicData(void *Param)
   uint32_t numberTranfer = 0;
   while (true)
   {
-    if(++numberTranfer > 1000)
-    {
-      numberTranfer = 0;
-    }
+    //if(++numberTranfer > 1000)
+    //{
+    //  numberTranfer = 0;
+    //}
     xQueueSend(readingQueue, &numberTranfer, 2000 / portTICK_PERIOD_MS);
     vTaskDelay(60000 / portTICK_PERIOD_MS);
   }
@@ -554,7 +555,12 @@ void task_display_home(void *params)
       status_button[1] = 0;
       display_menu(&info_garden[0]);
     }
-    vTaskDelay(10 / portTICK_RATE_MS);
+    if(status_button[0] == 1)
+    {
+      status_button[0] = 0;
+      display_home();
+    }
+    vTaskDelay(500 / portTICK_RATE_MS);
   }
 }
 
@@ -562,7 +568,7 @@ void display_home()
 {
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
-	ssd1306_draw_string(0, 20, 30, "HOME HOME 1", 2, 0);
+	ssd1306_draw_string(0, 20, 30, "HOME HOME 2", 2, 0);
 	ssd1306_refresh(0, true);
   vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
@@ -574,6 +580,12 @@ void display_home()
       status_button[1] = 0;
       display_menu(&info_garden[0]);
     }
+    if(status_button[0] == 1)
+    {
+      status_button[0] = 0;
+      display_home();
+    }
+    vTaskDelay(500 / portTICK_RATE_MS);
   }
 }
 
@@ -584,7 +596,11 @@ void display_menu(info_garden_t *_info_garden)
   sprintf(string_temp, "garden %d",_info_garden->ID);
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
-  ssd1306_draw_string(0, 10, 30, string_temp , 2, 0);
+  ssd1306_draw_string(0, 45, 3, string_temp , 2, 0);
+  ssd1306_draw_string(0, 0, 25, "nhiet do:" , 2, 0);
+  ssd1306_draw_string(0, 70, 25, "do am:" , 2, 0);
+  ssd1306_draw_string(0, 0, 45, "do am dat:" , 2, 0);
+  ssd1306_draw_string(0, 70, 45, "do sang:" , 2, 0);
   ssd1306_refresh(0, true);
   vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
@@ -609,6 +625,7 @@ void display_menu(info_garden_t *_info_garden)
       status_button[2] = 0;
       display_menu(&info_garden[temp]);
     }
+    vTaskDelay(500 / portTICK_RATE_MS);
   }
 }
 
@@ -619,10 +636,16 @@ void display_menu(info_garden_t *_info_garden)
 void display_garden(info_garden_t *_info_garden)
 {
     char string_temp[128];
-    sprintf(string_temp,"info garden %d",_info_garden->ID);
+    sprintf(string_temp,"gardent %d",_info_garden->ID);
     ssd1306_clear(0);
     ssd1306_select_font(0, 1);
-		ssd1306_draw_string(0, 20, 30, string_temp , 2, 0);
+		ssd1306_draw_string(0, 2, 1, string_temp , 1, 0);
+    ssd1306_draw_rectangle(0, 0 , 0, 50, 15, 1);
+    ssd1306_draw_string(0, 0, 16, "1 fan" , 2, 0);
+    ssd1306_draw_string(0, 0, 29, "2 pump in" , 2, 0);
+    ssd1306_draw_string(0, 60, 0, "3 pump out" , 2, 0);
+    ssd1306_draw_string(0, 60, 15, "4 bulb" , 2, 0);
+    ssd1306_draw_string(0, 60, 25, "5 curtain" , 2, 0);
     for(int i = 0; i<5; i++)
     {
       if(((1<<i)&(_info_garden->control)) == (1<<i))
@@ -634,7 +657,6 @@ void display_garden(info_garden_t *_info_garden)
         ssd1306_draw_string(0, 2 + 25*i, 43, "OFF" , 2, 0);
       }
     }
-
 
 		ssd1306_refresh(0, true);
     vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -661,7 +683,7 @@ void display_garden(info_garden_t *_info_garden)
         status_button[0] = 0;
         display_garden(&info_garden[1 - (_info_garden->ID - 1)]);
       }
-
+    vTaskDelay(500 / portTICK_RATE_MS);
     }
 }
 
@@ -680,10 +702,12 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
     }
     
     int8_t machine_number_temp = _machine_number;
-    sprintf(string_temp,"info garden machine %d",_info_garden->ID);
+    sprintf(string_temp,"gardent %d",_info_garden->ID);
     ssd1306_clear(0);
     ssd1306_select_font(0, 1);
-		ssd1306_draw_string(0, 20, 20, string_temp , 2, 0);
+		ssd1306_draw_string(0, 2, 1, string_temp , 1, 0);
+    ssd1306_draw_rectangle(0, 0 , 0, 50, 15, 1);
+    ssd1306_draw_string(0, 5, 22, "auto:  ON / OFF" , 2, 0);
     for(int i = 0; i<5; i++)
     {
       if(((1<<i)&(_info_garden->control)) == (1<<i))
@@ -749,6 +773,7 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
         _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
         display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
+      vTaskDelay(500 / portTICK_RATE_MS);
     }
 }
 
@@ -789,6 +814,7 @@ void app_main()
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 3, NULL);
   xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 2, NULL);
+
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
   //vTaskStartScheduler();
   
