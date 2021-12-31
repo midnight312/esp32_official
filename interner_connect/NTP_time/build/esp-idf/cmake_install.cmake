@@ -111,7 +111,6 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/tinyusb/cmake_install.cmake")
   include("C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/ulp/cmake_install.cmake")
   include("C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/wifi_provisioning/cmake_install.cmake")
-  include("C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/cmake_install.cmake")
   include("C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/main/cmake_install.cmake")
 
 endif()

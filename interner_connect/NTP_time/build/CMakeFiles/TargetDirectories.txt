@@ -8,7 +8,7 @@ C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/monitor.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/encrypted-flash.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/_project_elf_src.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/main.elf.dir
+C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/time.elf.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/size.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/size-files.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/CMakeFiles/size-components.dir
@@ -626,13 +626,6 @@ C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/wi
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/wifi_provisioning/CMakeFiles/rebuild_cache.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/wifi_provisioning/CMakeFiles/list_install_components.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/wifi_provisioning/CMakeFiles/install/strip.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/__idf_protocol_examples_common.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/install/local.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/install.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/edit_cache.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/rebuild_cache.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/list_install_components.dir
-C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/protocol_examples_common/CMakeFiles/install/strip.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/main/CMakeFiles/install/local.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/main/CMakeFiles/install.dir
 C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build/esp-idf/main/CMakeFiles/edit_cache.dir

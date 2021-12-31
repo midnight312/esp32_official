@@ -165,7 +165,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=main
+CMAKE_PROJECT_NAME:STATIC=time
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=C:/esp-idf/tool/.espressif/tools/xtensa-esp32-elf-clang/esp-12.0.1-20210914-x86_64-pc-windows-msvc/bin/xtensa-esp32-elf-ranlib.exe
@@ -520,6 +520,12 @@ mbedtls_LIB_DEPENDS:STATIC=general;__idf_cxx;general;__idf_newlib;general;__idf_
 //Dependencies for the target
 mbedx509_LIB_DEPENDS:STATIC=general;__idf_cxx;general;__idf_newlib;general;__idf_freertos;general;__idf_esp_hw_support;general;__idf_heap;general;__idf_log;general;__idf_lwip;general;__idf_soc;general;__idf_hal;general;__idf_esp_rom;general;__idf_esp_common;general;__idf_esp_system;general;__idf_esp32;general;mbedcrypto;
 
+//Value Computed by CMake
+time_BINARY_DIR:STATIC=C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time/build
+
+//Value Computed by CMake
+time_SOURCE_DIR:STATIC=C:/esp-idf/esp32_store/esp32_official/interner_connect/NTP_time
+
 
 ########################
 # INTERNAL cache entries
@@ -632,7 +638,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=89
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=88
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

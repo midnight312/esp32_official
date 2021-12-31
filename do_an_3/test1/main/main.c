@@ -19,6 +19,9 @@
 #include "mirf.h"
 #include "user_uart.h"
 #include "driver/uart.h"
+#include <time.h>
+#include "protocol_examples_common.h"
+#include "esp_sntp.h"
 
 #define TAG "DATA"
 
@@ -83,6 +86,9 @@ void display_home(void);
 void display_menu(info_garden_t *info_garden);
 void display_garden(info_garden_t *_info_garden);
 void display_garden_machine(info_garden_t *info_garden, uint8_t machine_number);
+
+//void on_got_time(struct timeval *tv);
+//void printf_time(long time, const char *message);
 
 /*
 
@@ -228,6 +234,7 @@ void OnConnected(void *para)
     if(xQueueReceive(readingQueue, &temp, portMAX_DELAY))
     {
       ESP_ERROR_CHECK(esp_wifi_start());
+      sntp_set_time_sync_notification_cb(on_got_time);
       MQTTLogic(temp);
       
     }
@@ -311,6 +318,39 @@ void NRF24L01_config(void)
   Nrf24_setRADDR_P1(&dev, (uint8_t *)"BCDEF");
   Nrf24_setRADDR_P2(&dev, (uint8_t *)"CDEFG");
   Nrf24_printDetails(&dev);
+}
+*/
+
+/*====================================================== TIME ======================================================*/
+/*
+void printf_time(long time, const char *message)
+{
+    setenv("TZ","SGT-7",1);
+    tzset();
+    struct tm *timeinfo = localtime(&time);
+    char buffer[50];
+    strftime(buffer,sizeof(buffer),"%c",timeinfo);
+    ESP_LOGI(TAG,"MESSAGE %s : %s",message,buffer);
+}
+
+
+void on_got_time(struct timeval *tv)
+{
+    printf("sec %ld\n",tv->tv_sec);
+    printf_time(tv->tv_sec,"time_at_callback");
+    printf("hihhi----------");
+    //example_disconnect();
+}
+
+void sntpInit()
+{
+  time_t now = 0;
+  time(&now);
+
+  sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
+  sntp_setservername(0, "pool.ntp.org");
+  sntp_init();
+  //sntp_set_time_sync_notification_cb(on_got_time);
 }
 */
 
@@ -795,6 +835,7 @@ void app_main()
 
   initGPIO();
   wifiInit();
+  //sntpInit();
   ssd1306_init(0, 21, 22);
   init_UART();
   //NRF24L01_config();

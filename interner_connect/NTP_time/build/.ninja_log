@@ -1274,3 +1274,5 @@
 87	586	6625857156769998	esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/flash_qio_mode.c.obj	fad18ab26818b5d
 67	648	6625857157395868	esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_flash_config_esp32.c.obj	774a9d22ea97e374
 60	764	6625857158541377	esp-idf/freertos/CMakeFiles/__idf_freertos.dir/queue.c.obj	a9cd6ddbee1953f7
+13	10578	6626167469979685	build.ninja	2a0bca36f22ea4ae
+59	175	6626167472562573	esp-idf/esp32/esp32_out.ld	7505ca84958d3372
