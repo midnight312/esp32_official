@@ -48,7 +48,7 @@ const uint32_t MQTT_CONNECTED = BIT2;
 const uint32_t MQTT_PUBLISHED = BIT3;
 
 static char temp_control_receive[2];
-static bool check_staus_control_receive = 0;
+
 
 //For hardware
 xQueueHandle interputQueueButtonBack;
@@ -78,6 +78,8 @@ static uint8_t display_machine_number;
 SemaphoreHandle_t  mutexControlCollectionModule;
 TaskHandle_t xTaskTRHandle1 = NULL;
 TaskHandle_t xTaskTRHandle2 = NULL;
+
+static uint8_t old_control = 0;
 
 void IRAM_ATTR gpio_input_handler(void *args);
 
@@ -140,17 +142,19 @@ void mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     ESP_LOGI(TAG, "MQTT_EVENT_DATA");
     printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
     sprintf(temp_control_receive, "%.*s", event->data_len, event->data);
-    if((char)*(event->topic + 19) == '1')
+    if(((char)*(event->topic + 19) == '1')&&(old_control != ((uint8_t)*event->data)))
     {
-      //info_garden[0].control = (uint8_t)*event->data;
-      printf("Control Gardent 1 : %d\n\n",info_garden[0].control);
+      info_garden[0].control = (uint8_t)*event->data;
+      old_control = (uint8_t)*event->data;
+      printf("Control Gardent publish from user throuput server 1 : %d\n\n",info_garden[0].control);
+\
     }
     //else if ((char)*(event->topic + 19) == '2')
     //{
     //  info_garden[2].control = (uint8_t)*event->data;
     //  printf("control gardent 2 : %d\n\n",info_garden[2].control);  
     //}
-    check_staus_control_receive = 1;
+    
     break;
   case MQTT_EVENT_ERROR:
     ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -161,23 +165,7 @@ void mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
   }
 }
 
-void string2hexString(char* input, char* output)
-{
-    int loop;
-    int i; 
-    
-    i=0;
-    loop=0;
-    
-    while(input[loop] != '\0')
-    {
-        sprintf((char*)(output+i),"%02X", input[loop]);
-        loop+=1;
-        i+=2;
-    }
-    //insert NULL at the end of the output string
-    output[i++] = '\0';
-}
+
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
@@ -214,7 +202,7 @@ void MQTTLogic(int number)
       //esp_mqtt_client_publish(client, "SmartFarmBK/gardent2", (char *)info_garden[1].data, 6, 2, false);     
       break;
     case MQTT_PUBLISHED:
-      vTaskDelay(5000 / portTICK_PERIOD_MS);
+      //vTaskDelay(100 / portTICK_PERIOD_MS);
       esp_mqtt_client_stop(client);
       esp_mqtt_client_destroy(client);
       //sntp_restart();
@@ -371,6 +359,7 @@ void generatePeriodicControl(void *Param)
     }
     //gpio_set_level(2, 0);
     ESP_LOGI(TAG,"data gardent 1: %s     data gardent 2: %s",(uint8_t *)info_garden[0].data, (uint8_t *)info_garden[1].data);
+    ESP_LOGI(TAG,"CONTROL GARDENT 1 : %d",info_garden[0].control);
     vTaskDelay(60000 / portTICK_PERIOD_MS);
   }
 }
@@ -393,7 +382,7 @@ void generatePeriodicData(void *Param)
   while (true)
   {
     xQueueSend(readingQueue, &numberTranfer, 2000 / portTICK_PERIOD_MS);
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
+    vTaskDelay(60000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -728,17 +717,7 @@ void display_garden(info_garden_t *_info_garden)
 void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number)
 {
     char string_temp[128];
-    char temp_convert[2];
-    if(check_staus_control_receive)
-    {
-      check_staus_control_receive = 0;
-      string2hexString(temp_control_receive, temp_convert);
-        for(int i = 0; i < 2; i++)
-        {
-          _info_garden[i].control = temp_convert[i];
-        }
-    }
-    
+    char temp_convert[2];    
     int8_t machine_number_temp = _machine_number;
     sprintf(string_temp,"gardent %d",_info_garden->ID);
     ssd1306_clear(0);
@@ -851,7 +830,7 @@ void app_main()
   //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
 
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 3, NULL);
-  xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
+  //xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 2, NULL);
 
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
