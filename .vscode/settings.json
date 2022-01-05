@@ -18,6 +18,7 @@
         "xutility": "c",
         "protocol_examples_common.h": "c",
         "user_uart.h": "c",
-        "esp_sntp.h": "c"
+        "esp_sntp.h": "c",
+        "ctime": "c"
     }
 }

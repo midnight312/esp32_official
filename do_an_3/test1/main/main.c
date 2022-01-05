@@ -21,7 +21,7 @@
 #include "driver/uart.h"
 #include <time.h>
 #include "protocol_examples_common.h"
-#include "esp_sntp.h"
+//#include "esp_sntp.h"
 
 #define TAG "DATA"
 
@@ -89,6 +89,7 @@ void display_garden_machine(info_garden_t *info_garden, uint8_t machine_number);
 
 //void on_got_time(struct timeval *tv);
 //void printf_time(long time, const char *message);
+//void sntpInit();
 
 /*
 
@@ -216,6 +217,7 @@ void MQTTLogic(int number)
       vTaskDelay(5000 / portTICK_PERIOD_MS);
       esp_mqtt_client_stop(client);
       esp_mqtt_client_destroy(client);
+      //sntp_restart();
       esp_wifi_stop();
       return;
     default:
@@ -234,7 +236,7 @@ void OnConnected(void *para)
     if(xQueueReceive(readingQueue, &temp, portMAX_DELAY))
     {
       ESP_ERROR_CHECK(esp_wifi_start());
-      sntp_set_time_sync_notification_cb(on_got_time);
+      
       MQTTLogic(temp);
       
     }
@@ -350,7 +352,7 @@ void sntpInit()
   sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
   sntp_setservername(0, "pool.ntp.org");
   sntp_init();
-  //sntp_set_time_sync_notification_cb(on_got_time);
+  sntp_set_time_sync_notification_cb(on_got_time);
 }
 */
 
@@ -369,7 +371,7 @@ void generatePeriodicControl(void *Param)
     }
     //gpio_set_level(2, 0);
     ESP_LOGI(TAG,"data gardent 1: %s     data gardent 2: %s",(uint8_t *)info_garden[0].data, (uint8_t *)info_garden[1].data);
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
+    vTaskDelay(60000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -390,12 +392,8 @@ void generatePeriodicData(void *Param)
   uint32_t numberTranfer = 0;
   while (true)
   {
-    //if(++numberTranfer > 1000)
-    //{
-    //  numberTranfer = 0;
-    //}
     xQueueSend(readingQueue, &numberTranfer, 2000 / portTICK_PERIOD_MS);
-    vTaskDelay(60000 / portTICK_PERIOD_MS);
+    vTaskDelay(30000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -583,7 +581,7 @@ void task_display_home(void *params)
   
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
-	ssd1306_draw_string(0, 20, 30, "HOME HOME 1", 2, 0);
+	ssd1306_draw_string(0, 30, 30, "SMART FARM", 2, 0);
 	ssd1306_refresh(0, true);
   vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
@@ -608,7 +606,7 @@ void display_home()
 {
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
-	ssd1306_draw_string(0, 20, 30, "HOME HOME 2", 2, 0);
+	ssd1306_draw_string(0, 30, 30, "SMART FARM", 2, 0);
 	ssd1306_refresh(0, true);
   vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
@@ -835,9 +833,9 @@ void app_main()
 
   initGPIO();
   wifiInit();
-  //sntpInit();
   ssd1306_init(0, 21, 22);
   init_UART();
+  //sntpInit();
   //NRF24L01_config();
 
   xTaskCreate(OnConnected, "handel comms", 1024 * 4, NULL, 2, &taskHandle);
