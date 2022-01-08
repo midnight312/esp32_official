@@ -64,12 +64,15 @@ typedef struct infoGarden
   uint8_t ID;
   uint8_t data[6];
   uint8_t control;
+  uint16_t dataHandler[3];
 } info_garden_t;
 
 static uint8_t status_button[3];
 
 static info_garden_t info_garden[2];
 static uint8_t display_machine_number;
+
+uint16_t dataHandler[3];
 
 //uart
 
@@ -88,6 +91,8 @@ void display_home(void);
 void display_menu(info_garden_t *info_garden);
 void display_garden(info_garden_t *_info_garden);
 void display_garden_machine(info_garden_t *info_garden, uint8_t machine_number);
+
+void data_Handler(void);
 
 //void on_got_time(struct timeval *tv);
 //void printf_time(long time, const char *message);
@@ -349,16 +354,27 @@ void sntpInit()
 void generatePeriodicControl(void *Param)
 {
   uint8_t temp[1];
+  ESP_LOGI(TAG,"data gardent 1: ");
   while (true)
   {
+    data_Handler();
     for(uint i = 0; i< NUMBER_GARDENT; i++)
     {
       //uart_write_bytes(info_garden[i].ID, info_garden[i].control, 1 );
       temp[0] = info_garden[i].control;
       uart_write_bytes(info_garden[i].ID, temp, 1 );
+
     }
     //gpio_set_level(2, 0);
-    ESP_LOGI(TAG,"data gardent 1: %s     data gardent 2: %s",(uint8_t *)info_garden[0].data, (uint8_t *)info_garden[1].data);
+    ESP_LOGI(TAG,"data gardent 1: ");
+    for(uint j = 0; j<3; j++)
+    {
+      printf("%d   ",info_garden[0].dataHandler[j]);
+    }
+    for(uint j = 0; j<6; j++)
+    {
+      printf("%d   ",info_garden[0].data[j]);
+    }
     ESP_LOGI(TAG,"CONTROL GARDENT 1 : %d",info_garden[0].control);
     vTaskDelay(60000 / portTICK_PERIOD_MS);
   }
@@ -382,10 +398,20 @@ void generatePeriodicData(void *Param)
   while (true)
   {
     xQueueSend(readingQueue, &numberTranfer, 2000 / portTICK_PERIOD_MS);
-    vTaskDelay(60000 / portTICK_PERIOD_MS);
+    vTaskDelay(300000 / portTICK_PERIOD_MS);
   }
 }
 
+void data_Handler(void)
+{
+  for(int i = 0; i<NUMBER_GARDENT;i++)
+  {
+    for(int j = 0; j<3; j++)
+    {
+    info_garden[i].dataHandler[j] = (info_garden[i].data[2*j] << 8) + info_garden[i].data[2*j + 1] ;
+    }
+  }
+}
 
 
 
@@ -619,15 +645,25 @@ void display_home()
 
 void display_menu(info_garden_t *_info_garden)
 {
+  data_Handler();
+   
   char string_temp[64];
+  char string_temp_do_am_dat[64];
+  char string_temp_nhiet_do[64];
+  char string_temp_do_sang[64];
+  char string_temp_do_am[64];
+  sprintf(string_temp_nhiet_do,"temp: %d°C",info_garden[_info_garden->ID - 1].dataHandler[2]*500/1023/3);
+  sprintf(string_temp_do_am,"hum: %%");
+  sprintf(string_temp_do_am_dat,"hum soil: %d%%",info_garden[_info_garden->ID - 1].dataHandler[0]*100/1023);
+  sprintf(string_temp_do_sang,"lum: %d",info_garden[_info_garden->ID - 1].dataHandler[1]*100/1023);
   sprintf(string_temp, "garden %d",_info_garden->ID);
   ssd1306_clear(0);
   ssd1306_select_font(0, 1);
   ssd1306_draw_string(0, 45, 3, string_temp , 2, 0);
-  ssd1306_draw_string(0, 0, 25, "nhiet do:" , 2, 0);
-  ssd1306_draw_string(0, 70, 25, "do am:" , 2, 0);
-  ssd1306_draw_string(0, 0, 45, "do am dat:" , 2, 0);
-  ssd1306_draw_string(0, 70, 45, "do sang:" , 2, 0);
+  ssd1306_draw_string(0, 0, 25, string_temp_nhiet_do , 2, 0);
+  ssd1306_draw_string(0, 70, 25, string_temp_do_am , 2, 0);
+  ssd1306_draw_string(0, 0, 45, string_temp_do_am_dat , 2, 0);
+  ssd1306_draw_string(0, 70, 45, string_temp_do_sang , 2, 0);
   ssd1306_refresh(0, true);
   vTaskDelay(500 / portTICK_PERIOD_MS);
   resetButton();
@@ -661,7 +697,7 @@ void display_menu(info_garden_t *_info_garden)
 
 
 void display_garden(info_garden_t *_info_garden)
-{
+{ 
     char string_temp[128];
     sprintf(string_temp,"gardent %d",_info_garden->ID);
     ssd1306_clear(0);
@@ -830,7 +866,7 @@ void app_main()
   //xTaskCreate(receiverNRF24L01, "receiver data from collection module", 1024 * 2, NULL, 1, &xTaskTRHandle1);
 
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 3, NULL);
-  //xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
+  xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 2, NULL);
 
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
