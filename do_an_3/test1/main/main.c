@@ -65,6 +65,7 @@ typedef struct infoGarden
   uint8_t data[6];
   uint8_t control;
   uint16_t dataHandler[3];
+  bool auto_mode;
 } info_garden_t;
 
 static uint8_t status_button[3];
@@ -575,6 +576,7 @@ void initGPIO(void)
     info_garden[i].ID = i + 1;
     //info_garden->data = 0;
     info_garden[i].control = 0;
+    info_garden[i].auto_mode = 1;
   }
   display_machine_number = 0;
 
@@ -652,9 +654,9 @@ void display_menu(info_garden_t *_info_garden)
   char string_temp_nhiet_do[64];
   char string_temp_do_sang[64];
   char string_temp_do_am[64];
-  sprintf(string_temp_nhiet_do,"temp: %d°C",info_garden[_info_garden->ID - 1].dataHandler[2]*500/1023/3);
+  sprintf(string_temp_nhiet_do,"temp: %d°C",info_garden[_info_garden->ID - 1].dataHandler[2]*500/1023/2);
   sprintf(string_temp_do_am,"hum: %%");
-  sprintf(string_temp_do_am_dat,"hum soil: %d%%",info_garden[_info_garden->ID - 1].dataHandler[0]*100/1023);
+  sprintf(string_temp_do_am_dat,"hum soil: %d%%",100 - info_garden[_info_garden->ID - 1].dataHandler[0]*100/1023);
   sprintf(string_temp_do_sang,"lum: %d",info_garden[_info_garden->ID - 1].dataHandler[1]*100/1023);
   sprintf(string_temp, "garden %d",_info_garden->ID);
   ssd1306_clear(0);
@@ -760,7 +762,17 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
     ssd1306_select_font(0, 1);
 		ssd1306_draw_string(0, 2, 1, string_temp , 1, 0);
     ssd1306_draw_rectangle(0, 0 , 0, 50, 15, 1);
-    ssd1306_draw_string(0, 5, 22, "auto:  ON / OFF" , 2, 0);
+    ssd1306_draw_string(0, 5, 22, "auto: " , 2, 0);
+    //Check auto mode
+    if(_info_garden->auto_mode  == 0)
+    {
+      ssd1306_draw_string( 0, 36, 22, "OFF" , 2, 0);
+    }
+    else
+    {
+      ssd1306_draw_string( 0, 36, 22, "ON" , 2, 0);
+    }
+    //Check status machine
     for(int i = 0; i<5; i++)
     {
       if(((1<<i)&(_info_garden->control)) == (1<<i))
@@ -772,8 +784,14 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
         ssd1306_draw_string(0, 2 + 25*i, 43, "OFF" , 2, 0);
       }
     }
-    ssd1306_draw_rectangle(0, 0 + 25*machine_number_temp, 39, 25, 25, 1);
-
+    if(machine_number_temp == 5)
+    {
+      ssd1306_draw_rectangle(0, 34, 14, 25, 25, 1);
+    }
+    else
+    {
+      ssd1306_draw_rectangle(0, 0 + 25*machine_number_temp, 39, 25, 25, 1);
+    }
 		ssd1306_refresh(0, true);
     vTaskDelay(500 / portTICK_PERIOD_MS);
     resetButton();
@@ -783,7 +801,15 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
       if(status_button[1] == 1)
       {
         status_button[1] = 0;
-        _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
+        if(machine_number_temp == 5)
+        {
+          _info_garden->auto_mode ^= 1;
+          printf("a");
+        }
+        else
+        {
+         _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
+        }
         display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
       if(status_button[1] == 2)
@@ -804,7 +830,7 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
       {
         status_button[0] = 0;
         machine_number_temp = machine_number_temp + 1;
-        if(machine_number_temp > 4)
+        if(machine_number_temp > 5)
         {
           machine_number_temp = 0;
         }
@@ -814,20 +840,65 @@ void display_garden_machine(info_garden_t *_info_garden, uint8_t _machine_number
       {
         status_button[2] = 0;
         machine_number_temp = machine_number_temp + 1;;
-        if(machine_number_temp > 4)
+        if(machine_number_temp > 5)
         {
           machine_number_temp = 0;
         } 
         display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
       }
-      else if(status_button[1] == 1)
-      {
-        status_button[1] = 0;
-        _info_garden->control = _info_garden->control ^ (1 << machine_number_temp);
-        display_garden_machine(&info_garden[_info_garden->ID - 1], machine_number_temp);
-      }
-      vTaskDelay(500 / portTICK_RATE_MS);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
     }
+}
+
+/*====================================================== AUTO MODE ======================================================*/
+
+void func_automode(void *params)
+{
+  for(uint i = 0; i<2; i++)
+  {
+    if(info_garden[i].auto_mode == 1)
+    {
+      //Turn off fan
+      if((info_garden[i].dataHandler[2]*500/1023/2) < 18)
+      {
+       info_garden[i].control &= ~(1 << 0);
+      }
+      //Turn on fan
+      if((info_garden[i].dataHandler[2]*500/1023/2) > 18)
+      {
+        info_garden[i].control &= ~(1 << 0);
+        info_garden[i].control |= (1 << 0);
+      }
+      //Turn on pump in and turn off pump out
+      if((100 - info_garden[i].dataHandler[0]*100/1023) < 40)
+      {
+        info_garden[i].control &= ~(1 << 1);
+        info_garden[i].control &= ~(1 << 2);
+
+        info_garden[i].control |= (1 << 1);
+      }
+      //Turn off pump in and turn on pump out
+      if((100 - info_garden[i].dataHandler[0]*100/1023) > 80)
+      {
+        info_garden[i].control &= ~(1 << 1);
+        info_garden[i].control &= ~(1 << 2);
+
+        info_garden[i].control |= (1 << 2);
+      }
+      //Turn on bulb
+      if((info_garden[i].dataHandler[1]*100/1023) < 50)
+      {
+        info_garden[i].control &= ~(1 << 3);
+        info_garden[i].control |= (1 << 3);
+      }
+      //Turn off bulf
+      if((info_garden[i].dataHandler[1]*100/1023) > 90)
+      {
+        info_garden[i].control &= ~(1 << 3);
+      }
+    }
+  }
+  vTaskDelay(300000 / portTICK_PERIOD_MS);
 }
 
 
@@ -868,6 +939,7 @@ void app_main()
   xTaskCreate(generatePeriodicControl,"update control periodic to stm8", 512, NULL, 3, NULL);
   xTaskCreate(generatePeriodicData,"update data periodic to sever", 512, NULL, 1, NULL);
   xTaskCreate(receiveDataUart,"receive data", 512, NULL, 2, NULL);
+  xTaskCreate(func_automode,"automatic change status machine if bad weather", 512, NULL, 1, NULL);
 
   //xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, 10, NULL);
   //vTaskStartScheduler();

@@ -1,0 +1,5 @@
+source "C:/esp-idf/esp-idf/components/app_update/Kconfig.projbuild"
+source "C:/esp-idf/esp-idf/components/bootloader/Kconfig.projbuild"
+source "C:/esp-idf/esp-idf/components/esptool_py/Kconfig.projbuild"
+source "C:/esp-idf/esp-idf/components/partition_table/Kconfig.projbuild"
+source "C:/esp-idf/esp32_store/esp32_official/he_thong_nhung/test_r305/main/Kconfig.projbuild"
