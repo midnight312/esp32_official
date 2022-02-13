@@ -1,0 +1,23 @@
+stm8s_tim6.pbi: \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\src\stm8s_tim6.c \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc\stm8s_tim6.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_conf.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_adc1.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_awu.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_beep.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_clk.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_exti.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_flash.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_gpio.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_i2c.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_itc.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_iwdg.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_rst.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_spi.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_tim1.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_tim2.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_tim4.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_uart1.h \
+  C:\Users\anhth\OneDrive\Máy\ tính\do_an_3\test2\driver\inc/stm8s_wwdg.h \
+  C:\Program\ Files\ (x86)\IAR\ Systems\Embedded\ Workbench\ 8.3\stm8\inc\c\intrinsics.h
